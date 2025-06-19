@@ -48,14 +48,20 @@ export default function SignUpForm() {
       // router.push('/'); // Or wherever you want to redirect after sign up
     } else {
       const authError = result as AuthError;
-      let errorMessage = 'Sign up failed. Please try again.';
+      console.error("Firebase SignUp Error:", authError); // Log the full error object
+
+      let errorMessage = `Sign up failed: ${authError.message || 'Please try again.'}`; // Default to Firebase message
+      
+      // You can still keep specific messages for common, user-friendly errors
       if (authError.code === 'auth/email-already-in-use') {
         errorMessage = 'This email is already in use.';
       } else if (authError.code === 'auth/weak-password') {
-        errorMessage = 'Password is too weak.';
+        errorMessage = 'Password is too weak. It must be at least 6 characters long.';
       } else if (authError.code === 'auth/invalid-email') {
         errorMessage = 'Invalid email format.';
       }
+      // For other errors, authError.message will be shown.
+
       toast({
         title: 'Sign Up Failed',
         description: errorMessage,
