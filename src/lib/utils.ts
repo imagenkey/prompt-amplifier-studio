@@ -8,29 +8,39 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-function escapeJsString(str: string | undefined | null): string {
+// This function is for escaping prompt content when it's embedded
+// as data within the Tampermonkey script's initialPrompts array.
+function escapePromptContentForScript(str: string | undefined | null): string {
+  if (str === undefined || str === null) {
+    return '';
+  }
+  // For content within backticks in the script's initialPrompts
+  return String(str)
+    .replace(/\\/g, '\\\\') // Escape backslashes
+    .replace(/`/g, '\\`')   // Escape backticks
+    .replace(/\$\{/g, '\\${'); // Escape ${ sequence
+}
+
+function objectToJsString(prompt: Prompt): string {
+  const id = `    id:      '${escapePromptContentForScript(prompt.id)}'`;
+  const type = `    type:    '${escapePromptContentForScript(prompt.type)}'`;
+  const title = `    title:   '${escapePromptContentForScript(prompt.title)}'`;
+  const content = `    content: \`${escapePromptContentForScript(prompt.content)}\``;
+  return `{\n${id},\n${type},\n${title},\n${content}\n}`;
+}
+
+// This is the actual helper function that will run inside the Tampermonkey script.
+// It's used by the script's own copyToClipboard logic.
+function tampermonkeyHelper_escapeForTemplateLiteral(str: string | undefined | null): string {
   if (str === undefined || str === null) {
     return '';
   }
   return String(str)
-    .replace(/\\/g, '\\\\') // Must be first
-    .replace(/'/g, "\\'")
-    .replace(/\n/g, '\\n')
-    .replace(/\r/g, '\\r')
-    .replace(/\t/g, '\\t')
-    .replace(/\b/g, '\\b')
-    .replace(/\f/g, '\\f');
+    .replace(/\\/g, '\\\\')  // \   ->  \\
+    .replace(/`/g, '\\`')   // `   ->  \`
+    .replace(/\$\{/g, '\\${'); // ${  ->  \${
 }
 
-function objectToJsString(prompt: Prompt): string {
-  const id = `    id:      '${escapeJsString(prompt.id)}'`;
-  const type = `    type:    '${escapeJsString(prompt.type)}'`;
-  const title = `    title:   '${escapeJsString(prompt.title)}'`;
-  // For content within backticks, we need to escape backticks and ${
-  const content = `    content: \`${String(prompt.content || '').replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$\{/g, '\\${')}\``;
-
-  return `{\n${id},\n${type},\n${title},\n${content}\n}`;
-}
 
 export function generateTampermonkeyScript(prompts: Prompt[]): string {
   const promptsArrayString = prompts.length > 0
@@ -39,6 +49,11 @@ export function generateTampermonkeyScript(prompts: Prompt[]): string {
 
   const scriptVersion = new Date().toISOString().slice(0, 10).replace(/-/g, '.');
   const lastUpdated = new Date().toLocaleString();
+
+  // Get the string representation of the helper function for use inside the Tampermonkey script.
+  // Rename it to 'escapeForTemplateLiteral' for use within the PROMPT_AMPLIFIER_DATA object.
+  const escapeFunctionStringForTampermonkey = tampermonkeyHelper_escapeForTemplateLiteral.toString()
+    .replace(/^function\s+tampermonkeyHelper_escapeForTemplateLiteral/, 'function');
 
   const scriptContent = `
 // ==UserScript==
@@ -92,18 +107,11 @@ ${promptsArrayString}
             return 'prompt_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
         },
 
-        escapeForTemplateLiteral: function(str) {
-            if (typeof str === 'undefined' || str === null) {
-                return '';
-            }
-            return String(str)
-                .replace(/\\/g, '\\\\\\\\')
-                .replace(/`/g, '\\\\\\`')
-                .replace(/\\$\\{/g, '\\\\\\$\\{');
-        },
+        // Embed the stringified helper function here
+        escapeForTemplateLiteral: ${escapeFunctionStringForTampermonkey},
 
         copyToClipboard: function(text, rawTitle, fromModalId = 'prompt-list-modal', isTemplate = false) {
-            const titleForNotification = this.escapeForTemplateLiteral(String(rawTitle || ''));
+            const titleForNotification = this.escapeForTemplateLiteral(String(rawTitle || '')); // Uses the embedded function
             navigator.clipboard.writeText(text).then(() => {
                 let message = 'Copied \`' + titleForNotification + '\` to clipboard!';
                 if (isTemplate) {
@@ -270,9 +278,9 @@ ${promptsArrayString}
             const mId = 'prompt-list-modal';
             const footerButtons = [];
             const templateKey = promptType === '${PROMPT_TYPES.SYSTEM}' ? 'SYSTEM_PROMPT' : 'APP_STARTER_PROMPT';
-            const templateString = \`\${PROMPT_TEMPLATES[templateKey as keyof typeof PROMPT_TEMPLATES]}\`;
+            const templateString = \`${PROMPT_TEMPLATES["SYSTEM_PROMPT" as PromptType].replace(/'/g, "\\\\'")}\`; // Ensure templates are also properly escaped for JS strings
             const templateTitle = promptType === '${PROMPT_TYPES.SYSTEM}' ? '${PROMPT_TYPE_NAMES.SYSTEM_PROMPT} Template' : '${PROMPT_TYPE_NAMES.APP_STARTER_PROMPT} Template';
-            footerButtons.push({ text: 'Copy Template', innerHTML: 'T<span class="ph-btn-text"> Copy Template</span>', className: 'prompt-helper-preset-button', handler: () => { this.copyToClipboard(templateString, templateTitle, mId, true); } });
+            footerButtons.push({ text: 'Copy Template', innerHTML: 'T<span class="ph-btn-text"> Copy Template</span>', className: 'prompt-helper-preset-button', handler: () => { this.copyToClipboard(templateKey === 'SYSTEM_PROMPT' ? \`${PROMPT_TEMPLATES.SYSTEM_PROMPT}\` : \`${PROMPT_TEMPLATES.APP_STARTER_PROMPT}\`, templateTitle, mId, true); } });
             footerButtons.push({ text: 'Close', className: 'secondary', handler: () => this.hideModal(mId) });
             const m = this.createModal(mId, modalTitlePrefix + ' List', cD, footerButtons);
             m.dataset.activeType = promptType;
@@ -435,3 +443,5 @@ export function copyToClipboard(text: string, successMessage: string, failureMes
   });
 }
 
+
+    
