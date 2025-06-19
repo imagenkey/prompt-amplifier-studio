@@ -1,7 +1,7 @@
 
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
-import type { Prompt } from "@/types";
+import type { Prompt, PromptType } from "@/types";
 import { PROMPT_TYPES, PROMPT_TEMPLATES, PROMPT_TYPE_NAMES } from "@/types";
 
 export function cn(...inputs: ClassValue[]) {
@@ -31,6 +31,7 @@ function objectToJsString(prompt: Prompt): string {
 
 // This is the actual helper function that will run inside the Tampermonkey script.
 // It's used by the script's own copyToClipboard logic.
+// We define it here and then convert it to a string to embed in the script.
 function tampermonkeyHelper_escapeForTemplateLiteral(str: string | undefined | null): string {
   if (str === undefined || str === null) {
     return '';
@@ -51,9 +52,9 @@ export function generateTampermonkeyScript(prompts: Prompt[]): string {
   const lastUpdated = new Date().toLocaleString();
 
   // Get the string representation of the helper function for use inside the Tampermonkey script.
-  // Rename it to 'escapeForTemplateLiteral' for use within the PROMPT_AMPLIFIER_DATA object.
   const escapeFunctionStringForTampermonkey = tampermonkeyHelper_escapeForTemplateLiteral.toString()
-    .replace(/^function\s+tampermonkeyHelper_escapeForTemplateLiteral/, 'function');
+    .replace(/^function\s+tampermonkeyHelper_escapeForTemplateLiteral/, 'function escapeForTemplateLiteral');
+
 
   const scriptContent = `
 // ==UserScript==
@@ -278,9 +279,14 @@ ${promptsArrayString}
             const mId = 'prompt-list-modal';
             const footerButtons = [];
             const templateKey = promptType === '${PROMPT_TYPES.SYSTEM}' ? 'SYSTEM_PROMPT' : 'APP_STARTER_PROMPT';
-            const templateString = \`${PROMPT_TEMPLATES["SYSTEM_PROMPT" as PromptType].replace(/'/g, "\\\\'")}\`; // Ensure templates are also properly escaped for JS strings
+            
+            // Correctly access PROMPT_TEMPLATES from the outer scope of the Tampermonkey script
+            const currentAppTemplates = typeof PROMPT_TEMPLATES !== 'undefined' ? PROMPT_TEMPLATES : { SYSTEM_PROMPT: "${PROMPT_TEMPLATES.SYSTEM_PROMPT.replace(/`/g, '\\`')}", APP_STARTER_PROMPT: "${PROMPT_TEMPLATES.APP_STARTER_PROMPT.replace(/`/g, '\\`')}" };
+            const templateString = currentAppTemplates[templateKey as keyof typeof currentAppTemplates];
+
             const templateTitle = promptType === '${PROMPT_TYPES.SYSTEM}' ? '${PROMPT_TYPE_NAMES.SYSTEM_PROMPT} Template' : '${PROMPT_TYPE_NAMES.APP_STARTER_PROMPT} Template';
-            footerButtons.push({ text: 'Copy Template', innerHTML: 'T<span class="ph-btn-text"> Copy Template</span>', className: 'prompt-helper-preset-button', handler: () => { this.copyToClipboard(templateKey === 'SYSTEM_PROMPT' ? \`${PROMPT_TEMPLATES.SYSTEM_PROMPT}\` : \`${PROMPT_TEMPLATES.APP_STARTER_PROMPT}\`, templateTitle, mId, true); } });
+            
+            footerButtons.push({ text: 'Copy Template', innerHTML: 'T<span class="ph-btn-text"> Copy Template</span>', className: 'prompt-helper-preset-button', handler: () => { this.copyToClipboard(templateString, templateTitle, mId, true); } });
             footerButtons.push({ text: 'Close', className: 'secondary', handler: () => this.hideModal(mId) });
             const m = this.createModal(mId, modalTitlePrefix + ' List', cD, footerButtons);
             m.dataset.activeType = promptType;
@@ -317,13 +323,13 @@ ${promptsArrayString}
             GM_addStyle(\`
                 :root {
                     --ph-modal-z-index: 10001;
-                    --ph-button-bg-color: #4682B4; /* Moderate Blue */
+                    --ph-button-bg-color: #4682B4; /* Moderate Blue - S-Prompts */
                     --ph-button-hover-bg-color: #3b6b92; /* Darker Moderate Blue */
-                    --ph-app-starter-bg-color: #7FFFD4; /* Pale Cyan/Aquamarine */
-                    --ph-app-starter-hover-bg-color: #66ccab; /* Darker Pale Cyan */
-                    --ph-edit-button-bg-color: #A9A9A9; /* Dark Gray */
+                    --ph-app-starter-bg-color: #9C27B0; /* Vibrant Purple - A-Prompts */
+                    --ph-app-starter-hover-bg-color: #7B1FA2; /* Darker Vibrant Purple */
+                    --ph-edit-button-bg-color: #A9A9A9; /* Dark Gray - E Edit URL */
                     --ph-edit-button-hover-bg-color: #8c8c8c; /* Darker Gray */
-                    --ph-copy-url-button-bg-color: #4CAF50; /* Green */
+                    --ph-copy-url-button-bg-color: #4CAF50; /* Green - P Copy URL */
                     --ph-copy-url-button-hover-bg-color: #45a049; /* Darker Green */
                     --ph-toast-warning-bg-color: #ffeb3b; /* Yellow */
                     --ph-toast-warning-text-color: #202124;
@@ -350,7 +356,7 @@ ${promptsArrayString}
                 #prompt-helper-button-container button .ph-btn-text { margin-left: 6px; }
                 #prompt-helper-system-button { background-color: var(--ph-button-bg-color); }
                 #prompt-helper-system-button:hover { background-color: var(--ph-button-hover-bg-color); }
-                #prompt-helper-app-starter-button { background-color: var(--ph-app-starter-bg-color); color: var(--ph-button-bg-color); }
+                #prompt-helper-app-starter-button { background-color: var(--ph-app-starter-bg-color); color: white; } /* Ensure text is white */
                 #prompt-helper-app-starter-button:hover { background-color: var(--ph-app-starter-hover-bg-color); }
                 #prompt-helper-edit-script-button { background-color: var(--ph-edit-button-bg-color); }
                 #prompt-helper-edit-script-button:hover { background-color: var(--ph-edit-button-hover-bg-color); }
@@ -442,6 +448,3 @@ export function copyToClipboard(text: string, successMessage: string, failureMes
     });
   });
 }
-
-
-    
