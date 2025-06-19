@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { generateTampermonkeyScript, copyToClipboard as copyUtil } from "@/lib/utils";
@@ -21,16 +22,11 @@ export default function AppHeader({ prompts, onAddNewPrompt, needsUpdate, setNee
     const scriptString = generateTampermonkeyScript(prompts);
     copyUtil(
       scriptString,
-      "Tampermonkey script copied! Paste it into a new or existing script in Tampermonkey.",
+      "Complete Tampermonkey script copied! Paste it into a new script in Tampermonkey.",
       "Failed to copy Tampermonkey script.",
       toast
     );
     setNeedsUpdate(false);
-    // As per user request, also open a TM URL (placeholder for now)
-    // window.open(TAMPERMONKEY_SPECIFIC_PAGE_URL, '_blank'); // This URL is not yet defined by user
-    // The toast below related to opening TM page might be obsolete if we are not opening it.
-    // For now, let's keep the behavior of not opening a URL directly from here.
-    // If user wants to open the TM edit page, they can use the "Copy TM Edit URL" button and paste it.
   };
 
   const handleCopyTmEditUrl = () => {
@@ -67,7 +63,7 @@ export default function AppHeader({ prompts, onAddNewPrompt, needsUpdate, setNee
           <Button 
             onClick={handleCopyScript} 
             className={needsUpdate ? "animate-pulse-more ring-2 ring-accent ring-offset-2" : ""}
-            title="Copy full Tampermonkey script with prompts"
+            title="Copy full Tampermonkey script with all prompts and UI logic"
           >
             {needsUpdate && <AlertTriangle className="mr-2 h-4 w-4 text-accent-foreground" />}
             <Copy className="mr-2 h-4 w-4" /> Copy Prompts for Script
@@ -83,4 +79,3 @@ export default function AppHeader({ prompts, onAddNewPrompt, needsUpdate, setNee
     </header>
   );
 }
-
