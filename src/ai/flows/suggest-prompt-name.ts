@@ -17,7 +17,7 @@ const SuggestPromptNameInputSchema = z.object({
 export type SuggestPromptNameInput = z.infer<typeof SuggestPromptNameInputSchema>;
 
 const SuggestPromptNameOutputSchema = z.object({
-  promptName: z.string().describe('A short, catchy name for the prompt.'),
+  promptName: z.string().describe('A short, catchy name for the prompt, in Japanese.'),
 });
 export type SuggestPromptNameOutput = z.infer<typeof SuggestPromptNameOutputSchema>;
 
@@ -29,9 +29,10 @@ const prompt = ai.definePrompt({
   name: 'suggestPromptNamePrompt',
   input: {schema: SuggestPromptNameInputSchema},
   output: {schema: SuggestPromptNameOutputSchema},
-  prompt: `Suggest a short, catchy name for the following prompt, no more than 4 words:
+  prompt: `以下のプロンプト内容に基づき、短くキャッチーな日本語の名前を提案してください。名前は4単語（またはそれに相当する短いフレーズ）以内とします。
 
-Prompt content: {{{promptContent}}}`,
+プロンプト内容:
+{{{promptContent}}}`,
 });
 
 const suggestPromptNameFlow = ai.defineFlow(
