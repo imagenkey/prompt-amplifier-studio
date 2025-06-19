@@ -1,24 +1,22 @@
 
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
-import type { Prompt, PromptType } from "@/types";
-import { PROMPT_TYPES, PROMPT_TEMPLATES, PROMPT_TYPE_NAMES } from "@/types";
+import type { Prompt } from "@/types";
+// PROMPT_TYPES and PROMPT_TYPE_NAMES are no longer directly injected into the Tampermonkey script for templates
+// as the user's script now defines its own PROMPT_TEMPLATES and simplified template titles.
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-// This function is for escaping prompt content when it's embedded
-// as data within the Tampermonkey script's initialPrompts array.
 function escapePromptContentForScript(str: string | undefined | null): string {
   if (str === undefined || str === null) {
     return '';
   }
-  // For content within backticks in the script's initialPrompts
   return String(str)
-    .replace(/\\/g, '\\\\') // Escape backslashes
-    .replace(/`/g, '\\`')   // Escape backticks
-    .replace(/\$\{/g, '\\${'); // Escape ${ sequence
+    .replace(/\\/g, '\\\\') 
+    .replace(/`/g, '\\`')   
+    .replace(/\$\{/g, '\\${'); 
 }
 
 function objectToJsString(prompt: Prompt): string {
@@ -29,17 +27,14 @@ function objectToJsString(prompt: Prompt): string {
   return `{\n${id},\n${type},\n${title},\n${content}\n}`;
 }
 
-// This is the actual helper function that will run inside the Tampermonkey script.
-// It's used by the script's own copyToClipboard logic.
-// We define it here and then convert it to a string to embed in the script.
 function tampermonkeyHelper_escapeForTemplateLiteral(str: string | undefined | null): string {
   if (str === undefined || str === null) {
     return '';
   }
   return String(str)
-    .replace(/\\/g, '\\\\')  // \   ->  \\
-    .replace(/`/g, '\\`')   // `   ->  \`
-    .replace(/\$\{/g, '\\${'); // ${  ->  \${
+    .replace(/\\/g, '\\\\')
+    .replace(/`/g, '\\`')
+    .replace(/\$\{/g, '\\${');
 }
 
 const TAMPERMONKEY_EDIT_URL = 'extension://iikmkjmpaadaobahmlepeloendndfphd/options.html#nav=0e53e7d4-cc80-45d0-83b4-8036d8f440a3+editor';
@@ -52,10 +47,8 @@ export function generateTampermonkeyScript(prompts: Prompt[]): string {
   const scriptVersion = new Date().toISOString().slice(0, 10).replace(/-/g, '.');
   const lastUpdated = new Date().toLocaleString();
 
-  // Get the string representation of the helper function for use inside the Tampermonkey script.
   const escapeFunctionStringForTampermonkey = tampermonkeyHelper_escapeForTemplateLiteral.toString()
     .replace(/^function\s+tampermonkeyHelper_escapeForTemplateLiteral/, 'function escapeForTemplateLiteral');
-
 
   const scriptContent = `
 // ==UserScript==
@@ -80,6 +73,21 @@ export function generateTampermonkeyScript(prompts: Prompt[]): string {
 
 (function() {
     'use strict';
+
+    const PROMPT_TEMPLATES = {
+        SYSTEM_PROMPT: \`{
+    id:      'new_system_prompt_id',
+    type:    'SYSTEM_PROMPT',
+    title:   '⚙️ - (新しいシステムプロンプト名)',
+    content: \\\`（ここにシステムプロンプトの内容を記述します）\\\`
+},\`,
+        APP_STARTER_PROMPT: \`{
+    id:      'new_app_starter_id',
+    type:    'APP_STARTER_PROMPT',
+    title:   '(新しいアプリスターター名)',
+    content: \\\`（ここにアプリスタータープロンプトの内容を記述します）\\\`
+},\`
+    };
 
     const PROMPT_AMPLIFIER_DATA = {
         initialPrompts: [
@@ -109,11 +117,10 @@ ${promptsArrayString}
             return 'prompt_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
         },
 
-        // Embed the stringified helper function here
         escapeForTemplateLiteral: ${escapeFunctionStringForTampermonkey},
 
         copyToClipboard: function(text, rawTitle, fromModalId = 'prompt-list-modal', isTemplate = false) {
-            const titleForNotification = this.escapeForTemplateLiteral(String(rawTitle || '')); // Uses the embedded function
+            const titleForNotification = this.escapeForTemplateLiteral(String(rawTitle || ''));
             navigator.clipboard.writeText(text).then(() => {
                 let message = 'Copied \`' + titleForNotification + '\` to clipboard!';
                 if (isTemplate) {
@@ -228,8 +235,8 @@ ${promptsArrayString}
                 });
                 return button;
             };
-            createPromptButton('prompt-helper-system-button', 'S-Prompts', 'Open System Prompt List', '${PROMPT_TYPES.SYSTEM}');
-            createPromptButton('prompt-helper-app-starter-button', 'A-Prompts', 'Open App Starter Prompt List', '${PROMPT_TYPES.APP_STARTER}');
+            createPromptButton('prompt-helper-system-button', 'S-Prompts', 'Open System Prompt List', 'SYSTEM_PROMPT');
+            createPromptButton('prompt-helper-app-starter-button', 'A-Prompts', 'Open App Starter Prompt List', 'APP_STARTER_PROMPT');
 
             const scriptInstructionsButton = document.createElement('button');
             scriptInstructionsButton.id = 'prompt-helper-edit-script-button';
@@ -279,13 +286,10 @@ ${promptsArrayString}
             }
             const mId = 'prompt-list-modal';
             const footerButtons = [];
-            const templateKey = promptType === '${PROMPT_TYPES.SYSTEM}' ? 'SYSTEM_PROMPT' : 'APP_STARTER_PROMPT';
+            const templateKey = promptType === 'SYSTEM_PROMPT' ? 'SYSTEM_PROMPT' : 'APP_STARTER_PROMPT';
             
-            // Correctly access PROMPT_TEMPLATES from the outer scope of the Tampermonkey script
-            const currentAppTemplates = typeof PROMPT_TEMPLATES !== 'undefined' ? PROMPT_TEMPLATES : { SYSTEM_PROMPT: \`${PROMPT_TEMPLATES.SYSTEM_PROMPT.replace(/`/g, '\\`')}\`, APP_STARTER_PROMPT: \`${PROMPT_TEMPLATES.APP_STARTER_PROMPT.replace(/`/g, '\\`')}\` };
-            const templateString = currentAppTemplates[templateKey];
-
-            const templateTitle = promptType === '${PROMPT_TYPES.SYSTEM}' ? '${PROMPT_TYPE_NAMES.SYSTEM_PROMPT} Template' : '${PROMPT_TYPE_NAMES.APP_STARTER_PROMPT} Template';
+            const templateString = PROMPT_TEMPLATES[templateKey];
+            const templateTitle = promptType === 'SYSTEM_PROMPT' ? 'System Prompt Template' : 'App Starter Prompt Template';
             
             footerButtons.push({ text: 'Copy Template', innerHTML: 'T<span class="ph-btn-text"> Copy Template</span>', className: 'prompt-helper-preset-button', handler: () => { this.copyToClipboard(templateString, templateTitle, mId, true); } });
             footerButtons.push({ text: 'Close', className: 'secondary', handler: () => this.hideModal(mId) });
@@ -407,15 +411,9 @@ ${promptsArrayString}
             GM_registerMenuCommand("Reset Prompts (Prompt Amplifier)", this.resetPrompts.bind(this));
             console.log('[Prompt Amplifier] Enhanced script initialized. Access prompts via PROMPT_AMPLIFIER_DATA.getPrompts()');
 
-            // Ensure initialPrompts have IDs
             this.initialPrompts = this.initialPrompts.map(p => ({...p, id: p.id || this.generateId()}));
-            // Load or initialize prompts from GM_getValue
-            const storedPrompts = GM_getValue('promptAmplifierEnhancedPrompts_v1');
-            if (!storedPrompts || storedPrompts.length === 0) {
-                 GM_setValue('promptAmplifierEnhancedPrompts_v1', this.initialPrompts);
-            }
+            GM_setValue('promptAmplifierEnhancedPrompts_v1', this.initialPrompts);
 
-            // Delay UI creation to ensure page is fully loaded
             setTimeout(() => this.createMainUI(), 800);
         }
     };
@@ -430,7 +428,6 @@ ${promptsArrayString}
 `;
   return scriptContent.trim();
 }
-
 
 export function copyToClipboard(text: string, successMessage: string, failureMessage: string, toastFn: (options: any) => void) {
   navigator.clipboard.writeText(text).then(() => {
