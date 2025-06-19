@@ -13,7 +13,7 @@ import {
   deleteDoc, 
   doc, 
   query, 
-  orderBy,
+  // orderBy, // Removed orderBy
   where
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase'; // Import db from firebase setup
@@ -28,10 +28,6 @@ export function usePrompts() {
 
   const getPromptsCollectionRef = useCallback(() => {
     if (!currentUser?.uid) return null;
-    // Prompts will be stored in a subcollection under the user's document
-    // or a top-level collection filtered by userId.
-    // Let's use a top-level collection 'prompts' and filter by userId.
-    // This allows for easier admin access if needed later.
     return collection(db, "prompts");
   }, [currentUser?.uid]);
 
@@ -47,11 +43,12 @@ export function usePrompts() {
 
       const fetchPrompts = async () => {
         try {
-          // Query prompts for the current user, ordered by title
-          const q = query(promptsColRef, where("userId", "==", currentUser.uid), orderBy("title"));
+          // Query prompts for the current user, order by title client-side
+          const q = query(promptsColRef, where("userId", "==", currentUser.uid)); // Removed orderBy("title")
           const querySnapshot = await getDocs(q);
-          const userPrompts = querySnapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() } as Prompt));
-          setPrompts(userPrompts);
+          const userPromptsData = querySnapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() } as Prompt));
+          userPromptsData.sort((a, b) => a.title.localeCompare(b.title)); // Sort client-side
+          setPrompts(userPromptsData);
         } catch (error) {
           console.error("Error fetching prompts: ", error);
           // TODO: Show toast for error fetching prompts
@@ -69,7 +66,6 @@ export function usePrompts() {
   const addPrompt = useCallback(async (newPromptData: Omit<Prompt, 'id'>) => {
     if (!currentUser?.uid) {
       console.error("No user logged in to add prompt.");
-      // TODO: Show toast or error message
       return;
     }
     const promptsColRef = getPromptsCollectionRef();
@@ -81,7 +77,6 @@ export function usePrompts() {
     const promptWithUser = { ...newPromptData, userId: currentUser.uid };
     
     try {
-      // Firestore will generate the ID
       const docRef = await addDoc(promptsColRef, promptWithUser);
       const newPrompt = { ...promptWithUser, id: docRef.id };
       setPrompts(prev => [...prev, newPrompt].sort((a, b) => a.title.localeCompare(b.title)));
@@ -89,7 +84,6 @@ export function usePrompts() {
       return newPrompt;
     } catch (error) {
       console.error("Error adding prompt: ", error);
-      // TODO: Handle error (e.g., show toast)
       return;
     }
   }, [currentUser, getPromptsCollectionRef]);
@@ -97,7 +91,6 @@ export function usePrompts() {
   const updatePrompt = useCallback(async (updatedPrompt: Prompt) => {
     if (!currentUser?.uid || !updatedPrompt.id) {
       console.error("User or prompt ID missing for update.");
-      // TODO: Show toast or error message
       return;
     }
     const promptsColRef = getPromptsCollectionRef();
@@ -108,23 +101,20 @@ export function usePrompts() {
     
     try {
       const promptRef = doc(db, "prompts", updatedPrompt.id);
-      // Ensure userId is not accidentally changed or removed if it's part of updatedPrompt
       const dataToUpdate = { ...updatedPrompt, userId: currentUser.uid };
-      delete (dataToUpdate as any).id; // Do not store id field itself in the document if id is the doc id
+      delete (dataToUpdate as any).id; 
 
       await updateDoc(promptRef, dataToUpdate);
       setPrompts(prev => prev.map(p => p.id === updatedPrompt.id ? { ...dataToUpdate, id: updatedPrompt.id } : p).sort((a,b) => a.title.localeCompare(b.title)));
       setNeedsUpdate(true);
     } catch (error) {
       console.error("Error updating prompt: ", error);
-      // TODO: Handle error
     }
   }, [currentUser, getPromptsCollectionRef]);
 
   const deletePrompt = useCallback(async (promptId: string) => {
     if (!currentUser?.uid || !promptId) {
       console.error("User or prompt ID missing for delete.");
-      // TODO: Show toast or error message
       return;
     }
      const promptsColRef = getPromptsCollectionRef();
@@ -140,7 +130,6 @@ export function usePrompts() {
       setNeedsUpdate(true);
     } catch (error) {
       console.error("Error deleting prompt: ", error);
-      // TODO: Handle error
     }
   }, [currentUser, getPromptsCollectionRef]);
 
