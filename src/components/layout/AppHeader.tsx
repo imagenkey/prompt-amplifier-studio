@@ -1,10 +1,12 @@
 
+"use client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { generateTampermonkeyScript, copyToClipboard as copyUtil } from "@/lib/utils";
 import type { Prompt } from "@/types";
 import { FilePlus2, Copy, ExternalLink, Link as LinkIcon, AlertTriangle } from "lucide-react";
 import LogoIcon from "@/components/icons/LogoIcon";
+import AuthStatus from "@/components/auth/AuthStatus";
 
 interface AppHeaderProps {
   prompts: Prompt[];
@@ -57,6 +59,7 @@ export default function AppHeader({ prompts, onAddNewPrompt, needsUpdate, setNee
           <h1 className="text-2xl font-bold text-primary">Prompt Amplifier</h1>
         </div>
         <div className="flex items-center gap-2">
+          <AuthStatus />
           <Button variant="outline" onClick={onAddNewPrompt}>
             <FilePlus2 className="mr-2 h-4 w-4" /> Add New Prompt
           </Button>

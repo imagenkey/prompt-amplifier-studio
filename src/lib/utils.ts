@@ -42,6 +42,7 @@ function tampermonkeyHelper_escapeForTemplateLiteral(str: string | undefined | n
     .replace(/\$\{/g, '\\${'); // ${  ->  \${
 }
 
+const TAMPERMONKEY_EDIT_URL = 'extension://iikmkjmpaadaobahmlepeloendndfphd/options.html#nav=0e53e7d4-cc80-45d0-83b4-8036d8f440a3+editor';
 
 export function generateTampermonkeyScript(prompts: Prompt[]): string {
   const promptsArrayString = prompts.length > 0
@@ -236,7 +237,7 @@ ${promptsArrayString}
             scriptInstructionsButton.title = 'Copy Tampermonkey script edit URL';
             mainButtonContainer.appendChild(scriptInstructionsButton);
             scriptInstructionsButton.addEventListener('click', () => {
-                const fixedUrlToCopy = 'extension://iikmkjmpaadaobahmlepeloendndfphd/options.html#nav=0e53e7d4-cc80-45d0-83b4-8036d8f440a3+editor';
+                const fixedUrlToCopy = '${TAMPERMONKEY_EDIT_URL}';
                 navigator.clipboard.writeText(fixedUrlToCopy).then(() => {
                     this.showNotification('Tampermonkey script edit URL copied!', false, false);
                 }).catch(err => { this.showNotification('Failed to copy Edit URL.', true); });
@@ -448,4 +449,3 @@ export function copyToClipboard(text: string, successMessage: string, failureMes
     });
   });
 }
-

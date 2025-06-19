@@ -1,5 +1,9 @@
+
 import type { Prompt } from '@/types';
 
+// This file can be kept for reference or if a non-logged-in state needs some default examples.
+// However, with user-specific data, this array will likely not be directly used by usePrompts hook
+// once Firestore integration is complete for logged-in users.
 export const initialMockPrompts: Prompt[] = [
   {
     id:      'mfIm9tqkueb5kjL2I0Bv',
