@@ -281,8 +281,8 @@ ${promptsArrayString}
             const templateKey = promptType === '${PROMPT_TYPES.SYSTEM}' ? 'SYSTEM_PROMPT' : 'APP_STARTER_PROMPT';
             
             // Correctly access PROMPT_TEMPLATES from the outer scope of the Tampermonkey script
-            const currentAppTemplates = typeof PROMPT_TEMPLATES !== 'undefined' ? PROMPT_TEMPLATES : { SYSTEM_PROMPT: "${PROMPT_TEMPLATES.SYSTEM_PROMPT.replace(/`/g, '\\`')}", APP_STARTER_PROMPT: "${PROMPT_TEMPLATES.APP_STARTER_PROMPT.replace(/`/g, '\\`')}" };
-            const templateString = currentAppTemplates[templateKey as keyof typeof currentAppTemplates];
+            const currentAppTemplates = typeof PROMPT_TEMPLATES !== 'undefined' ? PROMPT_TEMPLATES : { SYSTEM_PROMPT: \`${PROMPT_TEMPLATES.SYSTEM_PROMPT.replace(/`/g, '\\`')}\`, APP_STARTER_PROMPT: \`${PROMPT_TEMPLATES.APP_STARTER_PROMPT.replace(/`/g, '\\`')}\` };
+            const templateString = currentAppTemplates[templateKey];
 
             const templateTitle = promptType === '${PROMPT_TYPES.SYSTEM}' ? '${PROMPT_TYPE_NAMES.SYSTEM_PROMPT} Template' : '${PROMPT_TYPE_NAMES.APP_STARTER_PROMPT} Template';
             
@@ -448,3 +448,4 @@ export function copyToClipboard(text: string, successMessage: string, failureMes
     });
   });
 }
+
