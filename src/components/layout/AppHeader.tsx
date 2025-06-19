@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { promptsToScriptArrayString, copyToClipboard as copyUtil } from "@/lib/utils";
+import { generateTampermonkeyScript, copyToClipboard as copyUtil } from "@/lib/utils";
 import type { Prompt } from "@/types";
 import { FilePlus2, Copy, ExternalLink, Link as LinkIcon, AlertTriangle } from "lucide-react";
 import LogoIcon from "@/components/icons/LogoIcon";
@@ -18,22 +18,19 @@ export default function AppHeader({ prompts, onAddNewPrompt, needsUpdate, setNee
   const { toast } = useToast();
 
   const handleCopyScript = () => {
-    const scriptString = promptsToScriptArrayString(prompts);
+    const scriptString = generateTampermonkeyScript(prompts);
     copyUtil(
       scriptString,
-      "Prompts array copied to clipboard. Paste it into your Tampermonkey script.",
-      "Failed to copy prompts array.",
+      "Tampermonkey script copied! Paste it into a new or existing script in Tampermonkey.",
+      "Failed to copy Tampermonkey script.",
       toast
     );
     setNeedsUpdate(false);
     // As per user request, also open a TM URL (placeholder for now)
     // window.open(TAMPERMONKEY_SPECIFIC_PAGE_URL, '_blank'); // This URL is not yet defined by user
-    toast({
-      title: "Tampermonkey URL",
-      description: "Opening specific Tampermonkey page is not yet configured.",
-      variant: "default",
-      duration: 4000,
-    });
+    // The toast below related to opening TM page might be obsolete if we are not opening it.
+    // For now, let's keep the behavior of not opening a URL directly from here.
+    // If user wants to open the TM edit page, they can use the "Copy TM Edit URL" button and paste it.
   };
 
   const handleCopyTmEditUrl = () => {
@@ -70,6 +67,7 @@ export default function AppHeader({ prompts, onAddNewPrompt, needsUpdate, setNee
           <Button 
             onClick={handleCopyScript} 
             className={needsUpdate ? "animate-pulse-more ring-2 ring-accent ring-offset-2" : ""}
+            title="Copy full Tampermonkey script with prompts"
           >
             {needsUpdate && <AlertTriangle className="mr-2 h-4 w-4 text-accent-foreground" />}
             <Copy className="mr-2 h-4 w-4" /> Copy Prompts for Script
@@ -85,3 +83,4 @@ export default function AppHeader({ prompts, onAddNewPrompt, needsUpdate, setNee
     </header>
   );
 }
+
