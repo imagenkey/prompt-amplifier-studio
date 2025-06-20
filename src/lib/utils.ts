@@ -54,7 +54,7 @@ function objectToJsString(prompt: Prompt): string {
   const id = `    id:      '${escapePromptContentForScript(prompt.id)}'`;
   const type = `    type:    '${escapePromptContentForScript(prompt.type)}'`;
   const title = `    title:   '${escapePromptContentForScript(prompt.title)}'`;
-  const category = `    category: '${escapePromptContentForScript(prompt.category || '')}'`; 
+  const category = `    category: '${escapePromptContentForScript(prompt.category || '')}'`;
   const content = `    content: \`${escapePromptContentForScript(prompt.content)}\``;
   return `{\n${id},\n${type},\n${title},\n${category},\n${content}\n}`;
 }
@@ -195,7 +195,7 @@ ${promptsArrayString}
         },
 
         openModalsStack: [],
-        currentOpenModal: null, 
+        currentOpenModal: null,
         createModal: function(modalId, title, contentHTML, footerButtons = [], options = {}) {
             let o = document.getElementById(modalId + '-overlay'); if (o) o.remove();
             o = document.createElement('div'); o.id = modalId + '-overlay'; o.className = 'prompt-helper-modal-overlay';
@@ -310,9 +310,9 @@ ${promptsArrayString}
                 fP.forEach(p => {
                     const lIW = document.createElement('div'); lIW.className = 'prompt-helper-modal-list-item-wrapper';
                     const lI = document.createElement('div'); lI.className = 'prompt-helper-modal-list-item';
-                    
+
                     let displayHTML = this.escapeForTemplateLiteral(p.title);
-                    if (p.category && p.category !== '') { 
+                    if (p.category && p.category !== '') {
                         displayHTML += \` <span class="prompt-category-badge">\${this.escapeForTemplateLiteral(p.category)}</span>\`;
                     }
                     lI.innerHTML = displayHTML;
@@ -323,7 +323,7 @@ ${promptsArrayString}
                     pB.innerHTML = 'PV'; pB.title = 'Preview content';
                     lIW.appendChild(lI); lIW.appendChild(pB); cD.appendChild(lIW);
                     pB.addEventListener('click', e => { e.stopPropagation(); this.showPromptPreviewModal(p); });
-                    lIW.addEventListener('click', (e) => { 
+                    lIW.addEventListener('click', (e) => {
                         if (e.target !== pB && !pB.contains(e.target)) {
                            this.copyToClipboard(p.content, p.title, 'prompt-list-modal');
                         }
@@ -447,7 +447,7 @@ ${promptsArrayString}
                 .prompt-helper-modal-list-item-wrapper:last-child { border-bottom: none; }
                 .prompt-helper-modal-list-item-wrapper:hover { background-color: #e6f2ff; }
                 .prompt-helper-modal-list-item { flex-grow: 1; padding: 13px 12px; font-size: 14px; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-                
+
                 .prompt-category-badge { /* Style for the category badge in Tampermonkey */
                     font-size: 0.8em;
                     padding: 2px 5px;
@@ -468,7 +468,9 @@ ${promptsArrayString}
             GM_registerMenuCommand("Reset Prompts (Prompt Amplifier)", this.resetPrompts.bind(this));
             console.log('[Prompt Amplifier] Enhanced script initialized. Access prompts via PROMPT_AMPLIFIER_DATA.getPrompts()');
 
+            // Ensure initialPrompts have IDs and category
             this.initialPrompts = this.initialPrompts.map(p => ({...p, id: p.id || this.generateId(), category: p.category || ''}));
+            // Always overwrite storage with script's initialPrompts on init
             GM_setValue('promptAmplifierEnhancedPrompts_v1', this.initialPrompts);
 
             setTimeout(() => this.createMainUI(), 800);
@@ -482,4 +484,9 @@ ${promptsArrayString}
     }
 
 })();
+`;
 
+// The script above is the full content of the Tampermonkey script.
+// The image file attached is what the Prompt Amplifier App's header looks like after a recent change (it no longer has the "Copy Page URL" button).
+// The Tampermonkey script originally had a green "P Copy URL" button as part of its UI, but that button disappeared after I generated the script from the Prompt Amplifier App. I want that "P Copy URL" button back in the Tampermonkey script's UI.
+// Please modify src/lib/utils.ts to ensure the generated Tampermonkey script includes the "P Copy URL" button in its UI.

@@ -16,9 +16,11 @@ export const PROMPT_TYPES: Record<string, PromptType> = {
 };
 
 export const PROMPT_TEMPLATES: Record<PromptType, string> = {
-  SYSTEM_PROMPT: "{id: 'system_template_id_01', type: 'SYSTEM_PROMPT', title: '(New System Prompt Name)' , content: '(Enter system prompt content here)'},",
-  APP_STARTER_PROMPT: "{id: 'app_starter_template_id_01', type: 'APP_STARTER_PROMPT', title: 'Start: (New App Starter Prompt Name)' , content: '(Enter app starter prompt content here)'},"
+  SYSTEM_PROMPT: "{id: 'system_template_id_01', type: 'SYSTEM_PROMPT', title: '(New System Prompt Name)', category: '', content: '(Enter system prompt content here)'},",
+  APP_STARTER_PROMPT: "{id: 'app_starter_template_id_01', type: 'APP_STARTER_PROMPT', title: 'Start: (New App Starter Prompt Name)', category: '', content: '(Enter app starter prompt content here)'},"
 };
 
 export const PROMPT_TYPE_NAMES: Record<PromptType, string> = {
-  
+  SYSTEM_PROMPT: 'System Prompts',
+  APP_STARTER_PROMPT: 'App Starter Prompts'
+};
