@@ -2,7 +2,7 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 import type { Prompt, PromptType } from "@/types";
-import type { ToastProps } from "@/components/ui/toast"; // Assuming this is for the web app's toast
+import { PROMPT_TEMPLATES as TYPE_DEFINED_PROMPT_TEMPLATES } from "@/types";
 
 // This function is for the main web application
 export function cn(...inputs: ClassValue[]) {
@@ -42,38 +42,29 @@ export function copyToClipboard(
   );
 }
 
-
-// Helper function for Tampermonkey script generation
-function escapePromptContentForScript(str: string | undefined | null): string {
-  if (str === undefined || str === null) {
-    return '';
-  }
-  return String(str)
-    .replace(/\\/g, '\\\\') // Escape backslashes
-    .replace(/`/g, '\\`')   // Escape backticks
-    .replace(/\$\{/g, '\\${'); // Escape ${ for template literals
-}
-
 // Helper function for Tampermonkey script generation
 function objectToJsStringForScript(prompt: Prompt): string {
-  const id = `    id:      '${escapePromptContentForScript(prompt.id)}'`;
-  const type = `    type:    '${escapePromptContentForScript(prompt.type)}'`;
-  const title = `    title:   '${escapePromptContentForScript(prompt.title)}'`;
-  // Ensure category is always a string, even if empty, in the generated script object
-  const category = `    category: '${escapePromptContentForScript(prompt.category || '')}'`;
-  const content = `    content: \`${escapePromptContentForScript(prompt.content)}\``;
+  // JSON.stringify creates a valid JavaScript string literal, including the outer quotes.
+  const id = `    id:      ${JSON.stringify(prompt.id)}`;
+  const type = `    type:    ${JSON.stringify(prompt.type)}`;
+  const title = `    title:   ${JSON.stringify(prompt.title)}`;
+  const category = `    category: ${JSON.stringify(prompt.category || '')}`;
+  const content = `    content: ${JSON.stringify(prompt.content)}`;
   return `{\n${id},\n${type},\n${title},\n${category},\n${content}\n}`;
 }
 
-const TAMPERMONKEY_EDIT_URL_FOR_SCRIPT = 'extension://iikmkjmpaadaobahmlepeloendndfphd/options.html#nav=0e53e7d4-cc80-45d0-83b4-8036d8f440a3+editor';
+const TAMPERMONKEY_EDIT_URL_FOR_SCRIPT_CONST = 'extension://iikmkjmpaadaobahmlepeloendndfphd/options.html#nav=0e53e7d4-cc80-45d0-83b4-8036d8f440a3+editor';
 
 // This is the full function definition, not minified, as per user's script.
-const escapeFunctionForEmbeddingInScript = function escapeForTemplateLiteral(str: string | undefined | null) {
+// This function will be embedded as a string in the Tampermonkey script.
+const escapeFunctionStringForEmbeddingInScript = `
+function escapeForTemplateLiteral(str) {
     if (str === undefined || str === null) {
         return '';
     }
-    return String(str).replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$\{/g, '\\${');
-};
+    return String(str).replace(/\\\\/g, '\\\\\\\\').replace(/\`/g, '\\\\\`').replace(/\\\$\\{/g, '\\\\\\$\\{');
+}
+`.trim();
 
 
 export function generateTampermonkeyScript(prompts: Prompt[]): string {
@@ -84,7 +75,6 @@ export function generateTampermonkeyScript(prompts: Prompt[]): string {
   const scriptVersion = new Date().toISOString().slice(0, 10).replace(/-/g, '.');
   const lastUpdated = new Date().toLocaleString();
 
-  // User-provided header, maintained from previous interactions
   const userScriptHeader = `
 // ==UserScript==
 // @name         Prompt Amplifier Enhanced Prompts
@@ -107,6 +97,10 @@ export function generateTampermonkeyScript(prompts: Prompt[]): string {
 // @grant        GM_xmlhttpRequest
 // ==/UserScript==
 `;
+  // Prepare the template strings from types for safe embedding
+  const systemPromptTemplateForScript = JSON.stringify(TYPE_DEFINED_PROMPT_TEMPLATES.SYSTEM_PROMPT);
+  const appStarterPromptTemplateForScript = JSON.stringify(TYPE_DEFINED_PROMPT_TEMPLATES.APP_STARTER_PROMPT);
+  const tampermonkeyEditUrlForScript = JSON.stringify(TAMPERMONKEY_EDIT_URL_FOR_SCRIPT_CONST);
 
   return `
 ${userScriptHeader.trim()};
@@ -115,20 +109,8 @@ ${userScriptHeader.trim()};
     'use strict';
 
     const PROMPT_TEMPLATES = {
-        SYSTEM_PROMPT: \`{
-    id:      'new_system_prompt_id',
-    type:    'SYSTEM_PROMPT',
-    title:   '⚙️ - (新しいシステムプロンプト名)',
-    category: '',
-    content: \\\`（ここにシステムプロンプトの内容を記述します）\\\`
-},\`,
-        APP_STARTER_PROMPT: \`{
-    id:      'new_app_starter_id',
-    type:    'APP_STARTER_PROMPT',
-    title:   '(新しいアプリスターター名)',
-    category: '',
-    content: \\\`（ここにアプリスタータープロンプトの内容を記述します）\\\`
-},\`
+        SYSTEM_PROMPT: ${systemPromptTemplateForScript},
+        APP_STARTER_PROMPT: ${appStarterPromptTemplateForScript}
     };
 
     const PROMPT_AMPLIFIER_DATA = {
@@ -164,10 +146,10 @@ ${promptsArrayString}
             return 'prompt_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
         },
 
-        escapeForTemplateLiteral: ${escapeFunctionForEmbeddingInScript.toString()},
+        escapeForTemplateLiteral: ${escapeFunctionStringForEmbeddingInScript},
 
         copyToClipboard: function(text, rawTitle, fromModalId = 'prompt-list-modal', isTemplate = false) {
-            const titleForNotification = this.escapeForTemplateLiteral(String(rawTitle || ''));
+            const titleForNotification = this.escapeForTemplateLiteral(String(rawTitle || '')); // Used for display in notification
             navigator.clipboard.writeText(text).then(() => {
                 let message = 'Copied \`' + titleForNotification + '\` to clipboard!';
                 if (isTemplate) {
@@ -291,7 +273,7 @@ ${promptsArrayString}
             scriptInstructionsButton.title = 'Copy Tampermonkey script edit URL';
             mainButtonContainer.appendChild(scriptInstructionsButton);
             scriptInstructionsButton.addEventListener('click', () => {
-                const fixedUrlToCopy = '${TAMPERMONKEY_EDIT_URL_FOR_SCRIPT}';
+                const fixedUrlToCopy = ${tampermonkeyEditUrlForScript};
                 navigator.clipboard.writeText(fixedUrlToCopy).then(() => {
                     this.showNotification('Tampermonkey script edit URL copied!', false, false);
                 }).catch(err => { this.showNotification('Failed to copy Edit URL.', true); });
