@@ -40,17 +40,6 @@ export default function AppHeader({ prompts, onAddNewPrompt, needsUpdate, setNee
     );
   };
 
-  const handleCopyPageUrl = () => {
-    if (typeof window !== 'undefined') {
-      copyUtil(
-        window.location.href,
-        "Current page URL copied.",
-        "Failed to copy page URL.",
-        toast
-      );
-    }
-  };
-
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
@@ -73,9 +62,6 @@ export default function AppHeader({ prompts, onAddNewPrompt, needsUpdate, setNee
           </Button>
           <Button variant="secondary" onClick={handleCopyTmEditUrl} title="Copy Tampermonkey Edit URL">
             <ExternalLink className="mr-2 h-4 w-4" /> Copy TM Edit URL
-          </Button>
-          <Button variant="secondary" onClick={handleCopyPageUrl} title="Copy Current Page URL">
-            <LinkIcon className="mr-2 h-4 w-4" /> Copy Page URL
           </Button>
         </div>
       </div>
