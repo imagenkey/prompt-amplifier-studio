@@ -109,7 +109,7 @@ export function generateTampermonkeyScript(prompts: Prompt[]): string {
 `;
 
   return `
-${userScriptHeader.trim()}
+${userScriptHeader.trim()};
 
 (function() {
     'use strict';
@@ -495,4 +495,5 @@ ${promptsArrayString}
     }
 
 })();
-```
+`;
+}
