@@ -2,7 +2,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { copyToClipboard as copyUtil } from "@/lib/utils";
 import { Edit3, Trash2, Copy } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 interface PromptCardProps {
   prompt: Prompt;
@@ -39,7 +40,10 @@ export default function PromptCard({ prompt, onEdit, onDelete }: PromptCardProps
   };
 
   return (
-    <Card className="flex flex-col h-full shadow-lg hover:shadow-xl transition-shadow duration-300">
+    <Card className={cn(
+      "flex flex-col h-full shadow-lg hover:shadow-xl transition-shadow duration-300",
+      prompt.category ? "bg-secondary/30" : ""
+    )}>
       <CardHeader>
         <div className="flex justify-between items-start">
           <CardTitle className="text-lg truncate" title={prompt.title}>{prompt.title}</CardTitle>
@@ -49,7 +53,7 @@ export default function PromptCard({ prompt, onEdit, onDelete }: PromptCardProps
             </Badge>
           )}
         </div>
-        <CardDescription>{prompt.type === 'SYSTEM_PROMPT' ? 'System Prompt' : 'App Starter Prompt'}</CardDescription>
+        {/* Redundant prompt type description removed as requested */}
       </CardHeader>
       <CardContent className="flex-grow overflow-hidden">
         <p className="text-sm text-muted-foreground line-clamp-3 font-code" title={prompt.content}>
