@@ -4,16 +4,17 @@
 import { useState, useCallback, useEffect } from 'react';
 import type { Prompt, PromptType } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
-import { 
-  getFirestore, 
-  collection, 
-  addDoc, 
-  getDocs, 
-  updateDoc, 
-  deleteDoc, 
-  doc, 
-  query, 
-  where
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  getDocs,
+  updateDoc,
+  deleteDoc,
+  doc,
+  query,
+  where,
+  deleteField
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
@@ -44,16 +45,15 @@ export function usePrompts() {
           const querySnapshot = await getDocs(q);
           const userPromptsData = querySnapshot.docs.map(docSnap => {
             const data = docSnap.data();
-            return { 
-              id: docSnap.id, 
+            return {
+              id: docSnap.id,
               title: data.title || '',
-              type: data.type || 'APP_STARTER_PROMPT', 
+              type: data.type || 'APP_STARTER_PROMPT',
               content: data.content || '',
-              category: data.category, 
-              userId: data.userId 
+              category: data.category || '',
+              userId: data.userId
             } as Prompt;
           });
-          // Client-side sorting
           userPromptsData.sort((a, b) => a.title.localeCompare(b.title));
           setPrompts(userPromptsData);
         } catch (error) {
@@ -80,15 +80,20 @@ export function usePrompts() {
       return;
     }
 
-    const promptWithUserAndCategory = { 
-      ...newPromptData, 
-      userId: currentUser.uid, 
-      category: newPromptData.category || undefined 
+    const dataToSave: Omit<Prompt, 'id'> & { category?: string } = {
+      ...newPromptData,
+      userId: currentUser.uid,
     };
-    
+
+    if (newPromptData.category && newPromptData.category.trim() !== "") {
+      dataToSave.category = newPromptData.category.trim();
+    } else {
+      delete dataToSave.category; // Firestore omits undefined fields, so this effectively removes it or doesn't add it
+    }
+
     try {
-      const docRef = await addDoc(promptsColRef, promptWithUserAndCategory);
-      const newPrompt = { ...promptWithUserAndCategory, id: docRef.id } as Prompt;
+      const docRef = await addDoc(promptsColRef, dataToSave);
+      const newPrompt = { ...dataToSave, id: docRef.id, category: dataToSave.category || '' } as Prompt;
       setPrompts(prev => [...prev, newPrompt].sort((a, b) => a.title.localeCompare(b.title)));
       setNeedsUpdate(true);
       return newPrompt;
@@ -108,31 +113,49 @@ export function usePrompts() {
       console.error("Prompts collection reference not available.");
       return;
     }
-    
+
     try {
       const promptRef = doc(db, "prompts", updatedPrompt.id);
-      const dataToUpdate: Partial<Prompt> & { userId: string } = { 
+
+      const dataToUpdate: {
+        title: string;
+        type: PromptType;
+        content: string;
+        userId: string;
+        category?: string | ReturnType<typeof deleteField>;
+      } = {
         title: updatedPrompt.title,
         type: updatedPrompt.type,
         content: updatedPrompt.content,
-        category: updatedPrompt.category || undefined, 
-        userId: currentUser.uid 
+        userId: currentUser.uid
       };
 
+      if (updatedPrompt.category && updatedPrompt.category.trim() !== "") {
+        dataToUpdate.category = updatedPrompt.category.trim();
+      } else {
+        dataToUpdate.category = deleteField();
+      }
+
       await updateDoc(promptRef, dataToUpdate);
-      setPrompts(prev => prev.map(p => p.id === updatedPrompt.id ? { ...p, ...dataToUpdate, id: updatedPrompt.id } : p).sort((a,b) => a.title.localeCompare(b.title)));
+
+      const newLocalPrompt = {
+        ...updatedPrompt,
+        category: (updatedPrompt.category && updatedPrompt.category.trim() !== "") ? updatedPrompt.category.trim() : '',
+      };
+
+      setPrompts(prev => prev.map(p => p.id === updatedPrompt.id ? newLocalPrompt : p).sort((a,b) => a.title.localeCompare(b.title)));
       setNeedsUpdate(true);
     } catch (error) {
       console.error("Error updating prompt: ", error);
     }
-  }, [currentUser, getPromptsCollectionRef]);
+  }, [currentUser, getPromptsCollectionRef, db]);
 
   const deletePrompt = useCallback(async (promptId: string) => {
     if (!currentUser?.uid || !promptId) {
       console.error("User or prompt ID missing for delete.");
       return;
     }
-     const promptsColRef = getPromptsCollectionRef();
+    const promptsColRef = getPromptsCollectionRef();
     if (!promptsColRef) {
       console.error("Prompts collection reference not available.");
       return;
@@ -146,20 +169,20 @@ export function usePrompts() {
     } catch (error) {
       console.error("Error deleting prompt: ", error);
     }
-  }, [currentUser, getPromptsCollectionRef]);
+  }, [currentUser, getPromptsCollectionRef, db]);
 
   const getPromptsByType = useCallback((type: PromptType) => {
     return prompts.filter(p => p.type === type);
   }, [prompts]);
 
-  return { 
-    prompts, 
-    addPrompt, 
-    updatePrompt, 
-    deletePrompt, 
+  return {
+    prompts,
+    addPrompt,
+    updatePrompt,
+    deletePrompt,
     getPromptsByType,
-    isLoaded, 
-    needsUpdate, 
+    isLoaded,
+    needsUpdate,
     setNeedsUpdate
   };
 }

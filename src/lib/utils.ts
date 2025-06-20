@@ -2,12 +2,14 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 import type { Prompt, PromptType } from "@/types";
-import type { ToastProps } from "@/components/ui/toast";
+import type { ToastProps } from "@/components/ui/toast"; // Assuming this is for the web app's toast
 
+// This function is for the main web application
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+// This function is for the main web application
 export function copyToClipboard(
   text: string,
   successMessage: string,
@@ -40,20 +42,24 @@ export function copyToClipboard(
   );
 }
 
+
+// Helper function for Tampermonkey script generation
 function escapePromptContentForScript(str: string | undefined | null): string {
   if (str === undefined || str === null) {
     return '';
   }
   return String(str)
-    .replace(/\\/g, '\\\\')
-    .replace(/`/g, '\\`')
-    .replace(/\$\{/g, '\\${');
+    .replace(/\\/g, '\\\\') // Escape backslashes
+    .replace(/`/g, '\\`')   // Escape backticks
+    .replace(/\$\{/g, '\\${'); // Escape ${ for template literals
 }
 
-function objectToJsString(prompt: Prompt): string {
+// Helper function for Tampermonkey script generation
+function objectToJsStringForScript(prompt: Prompt): string {
   const id = `    id:      '${escapePromptContentForScript(prompt.id)}'`;
   const type = `    type:    '${escapePromptContentForScript(prompt.type)}'`;
   const title = `    title:   '${escapePromptContentForScript(prompt.title)}'`;
+  // Ensure category is always a string, even if empty, in the generated script object
   const category = `    category: '${escapePromptContentForScript(prompt.category || '')}'`;
   const content = `    content: \`${escapePromptContentForScript(prompt.content)}\``;
   return `{\n${id},\n${type},\n${title},\n${category},\n${content}\n}`;
@@ -69,9 +75,10 @@ const escapeFunctionForEmbeddingInScript = function escapeForTemplateLiteral(str
     return String(str).replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$\{/g, '\\${');
 };
 
+
 export function generateTampermonkeyScript(prompts: Prompt[]): string {
   const promptsArrayString = prompts.length > 0
-    ? prompts.map(p => `        ${objectToJsString(p).replace(/\n/g, '\n        ')}`).join(',\n')
+    ? prompts.map(p => `        ${objectToJsStringForScript(p).replace(/\n/g, '\n        ')}`).join(',\n')
     : '        // No prompts defined. Add some in Prompt Amplifier or edit this script!';
 
   const scriptVersion = new Date().toISOString().slice(0, 10).replace(/-/g, '.');
@@ -130,11 +137,15 @@ ${promptsArrayString}
         ],
 
         getPrompts: function() {
-            return GM_getValue('promptAmplifierEnhancedPrompts_v1', this.initialPrompts.map(p => ({...p, id: p.id || this.generateId(), category: p.category || ''})));
+            // Ensure category exists on prompts from GM_getValue
+            const storedPrompts = GM_getValue('promptAmplifierEnhancedPrompts_v1', this.initialPrompts.map(p => ({...p, id: p.id || this.generateId(), category: p.category || ''})));
+            return storedPrompts.map(p => ({...p, category: p.category || ''}));
         },
 
         savePrompts: function(currentPrompts) {
-            GM_setValue('promptAmplifierEnhancedPrompts_v1', currentPrompts);
+            // Ensure category exists when saving
+            const promptsToSave = currentPrompts.map(p => ({...p, category: p.category || ''}));
+            GM_setValue('promptAmplifierEnhancedPrompts_v1', promptsToSave);
             this.showNotification('[Prompt Amplifier] Prompts saved to local storage.', false);
         },
 
@@ -312,7 +323,7 @@ ${promptsArrayString}
                     const lI = document.createElement('div'); lI.className = 'prompt-helper-modal-list-item';
 
                     let displayHTML = this.escapeForTemplateLiteral(p.title);
-                    if (p.category && p.category !== '') {
+                    if (p.category && p.category !== '') { // Check if category is not empty
                         displayHTML += \` <span class="prompt-category-badge">\${this.escapeForTemplateLiteral(p.category)}</span>\`;
                     }
                     lI.innerHTML = displayHTML;
@@ -484,9 +495,4 @@ ${promptsArrayString}
     }
 
 })();
-`;
-
-// The script above is the full content of the Tampermonkey script.
-// The image file attached is what the Prompt Amplifier App's header looks like after a recent change (it no longer has the "Copy Page URL" button).
-// The Tampermonkey script originally had a green "P Copy URL" button as part of its UI, but that button disappeared after I generated the script from the Prompt Amplifier App. I want that "P Copy URL" button back in the Tampermonkey script's UI.
-// Please modify src/lib/utils.ts to ensure the generated Tampermonkey script includes the "P Copy URL" button in its UI.
+```
