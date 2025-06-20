@@ -2,8 +2,6 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 import type { Prompt } from "@/types";
-// PROMPT_TYPES and PROMPT_TYPE_NAMES are no longer directly injected into the Tampermonkey script for templates
-// as the user's script now defines its own PROMPT_TEMPLATES and simplified template titles.
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -14,9 +12,9 @@ function escapePromptContentForScript(str: string | undefined | null): string {
     return '';
   }
   return String(str)
-    .replace(/\\/g, '\\\\') 
-    .replace(/`/g, '\\`')   
-    .replace(/\$\{/g, '\\${'); 
+    .replace(/\\/g, '\\\\')
+    .replace(/`/g, '\\`')
+    .replace(/\$\{/g, '\\${');
 }
 
 function objectToJsString(prompt: Prompt): string {
@@ -27,15 +25,8 @@ function objectToJsString(prompt: Prompt): string {
   return `{\n${id},\n${type},\n${title},\n${content}\n}`;
 }
 
-function tampermonkeyHelper_escapeForTemplateLiteral(str: string | undefined | null): string {
-  if (str === undefined || str === null) {
-    return '';
-  }
-  return String(str)
-    .replace(/\\/g, '\\\\')
-    .replace(/`/g, '\\`')
-    .replace(/\$\{/g, '\\${');
-}
+// This helper function is now directly embedded and stringified within generateTampermonkeyScript
+// function tampermonkeyHelper_escapeForTemplateLiteral(str: string | undefined | null): string { ... }
 
 const TAMPERMONKEY_EDIT_URL = 'extension://iikmkjmpaadaobahmlepeloendndfphd/options.html#nav=0e53e7d4-cc80-45d0-83b4-8036d8f440a3+editor';
 
@@ -47,8 +38,19 @@ export function generateTampermonkeyScript(prompts: Prompt[]): string {
   const scriptVersion = new Date().toISOString().slice(0, 10).replace(/-/g, '.');
   const lastUpdated = new Date().toLocaleString();
 
-  const escapeFunctionStringForTampermonkey = tampermonkeyHelper_escapeForTemplateLiteral.toString()
-    .replace(/^function\s+tampermonkeyHelper_escapeForTemplateLiteral/, 'function escapeForTemplateLiteral');
+  // This function will be stringified and embedded into the Tampermonkey script.
+  // It must be self-contained and not rely on external scope other than its arguments.
+  const escapeFunctionForEmbedding = function escapeForTemplateLiteral(str) {
+    if (str === undefined || str === null) {
+        return '';
+    }
+    return String(str)
+        .replace(/\\/g, '\\\\')
+        .replace(/`/g, '\\`')
+        .replace(/\$\{/g, '\\${');
+  };
+  const escapeFunctionStringForTampermonkey = escapeFunctionForEmbedding.toString();
+
 
   const scriptContent = `
 // ==UserScript==
@@ -63,6 +65,7 @@ export function generateTampermonkeyScript(prompts: Prompt[]): string {
 // @match        https://chatgpt.com/*
 // @match        https://m365.cloud.microsoft/chat*
 // @match        https://zebra-ai-web-prd.ait.microsoft.com/*
+// @match        https://onesupport.crm.dynamics.com/main.aspx/*
 // @grant        GM_addStyle
 // @grant        GM_info
 // @grant        GM_setValue
@@ -446,3 +449,5 @@ export function copyToClipboard(text: string, successMessage: string, failureMes
     });
   });
 }
+
+
