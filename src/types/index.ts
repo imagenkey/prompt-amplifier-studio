@@ -1,3 +1,4 @@
+
 export type PromptType = 'SYSTEM_PROMPT' | 'APP_STARTER_PROMPT';
 
 export interface Prompt {
@@ -5,6 +6,8 @@ export interface Prompt {
   type: PromptType;
   title: string;
   content: string;
+  category?: string; // Added category field
+  userId?: string; // Keep userId optional here for general type definition
 }
 
 export const PROMPT_TYPES: Record<string, PromptType> = {
@@ -18,6 +21,4 @@ export const PROMPT_TEMPLATES: Record<PromptType, string> = {
 };
 
 export const PROMPT_TYPE_NAMES: Record<PromptType, string> = {
-  SYSTEM_PROMPT: 'System Prompt',
-  APP_STARTER_PROMPT: 'App Starter Prompt',
-};
+  

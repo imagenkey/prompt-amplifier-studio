@@ -37,6 +37,7 @@ export default function PromptFormDialog({ isOpen, onClose, onSave, prompt }: Pr
   const [title, setTitle] = useState("");
   const [type, setType] = useState<PromptType>(PROMPT_TYPES.SYSTEM as PromptType);
   const [content, setContent] = useState("");
+  const [category, setCategory] = useState(""); // Added category state
   const [isSuggestingName, setIsSuggestingName] = useState(false);
   const { toast } = useToast();
 
@@ -45,11 +46,13 @@ export default function PromptFormDialog({ isOpen, onClose, onSave, prompt }: Pr
       setTitle(prompt.title);
       setType(prompt.type);
       setContent(prompt.content);
+      setCategory(prompt.category || ""); // Set category or empty string
     } else {
       // Reset for new prompt
       setTitle("");
       setType(PROMPT_TYPES.SYSTEM as PromptType);
       setContent("");
+      setCategory(""); // Reset category
     }
   }, [prompt, isOpen]);
 
@@ -96,7 +99,13 @@ export default function PromptFormDialog({ isOpen, onClose, onSave, prompt }: Pr
       });
       return;
     }
-    const promptData = { title, type, content };
+    const trimmedCategory = category.trim();
+    const promptData = { 
+      title, 
+      type, 
+      content, 
+      category: trimmedCategory || undefined // Store undefined if category is empty, so Firestore omits it
+    };
     if (prompt && prompt.id) {
       onSave({ ...promptData, id: prompt.id });
     } else {
@@ -151,6 +160,18 @@ export default function PromptFormDialog({ isOpen, onClose, onSave, prompt }: Pr
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="category" className="text-right">
+              Category
+            </Label>
+            <Input
+              id="category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="col-span-3"
+              placeholder="Enter category (e.g., Email, Code, Summary)"
+            />
           </div>
           <div className="grid grid-cols-4 items-start gap-4">
             <Label htmlFor="content" className="text-right pt-2">

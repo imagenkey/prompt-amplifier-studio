@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ import type { Prompt } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { copyToClipboard as copyUtil } from "@/lib/utils";
 import { Edit3, Trash2, Copy } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface PromptCardProps {
   prompt: Prompt;
@@ -39,7 +41,14 @@ export default function PromptCard({ prompt, onEdit, onDelete }: PromptCardProps
   return (
     <Card className="flex flex-col h-full shadow-lg hover:shadow-xl transition-shadow duration-300">
       <CardHeader>
-        <CardTitle className="text-lg truncate" title={prompt.title}>{prompt.title}</CardTitle>
+        <div className="flex justify-between items-start">
+          <CardTitle className="text-lg truncate" title={prompt.title}>{prompt.title}</CardTitle>
+          {prompt.category && (
+            <Badge variant="secondary" className="ml-2 whitespace-nowrap shrink-0">
+              {prompt.category}
+            </Badge>
+          )}
+        </div>
         <CardDescription>{prompt.type === 'SYSTEM_PROMPT' ? 'System Prompt' : 'App Starter Prompt'}</CardDescription>
       </CardHeader>
       <CardContent className="flex-grow overflow-hidden">
