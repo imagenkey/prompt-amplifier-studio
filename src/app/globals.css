@@ -4,13 +4,13 @@
 
 @layer base {
   :root {
-    --background: 206 100% 97%; /* #F0F8FF Alice Blue */
+    --background: 0 0% 100%; /* #FFFFFF White */
     --foreground: 240 10% 3.9%; /* Default dark text for light background */
 
-    --card: 206 100% 97%; /* Same as background for a flatter look */
+    --card: 0 0% 100%; /* White for cards */
     --card-foreground: 240 10% 3.9%;
 
-    --popover: 206 100% 97%;
+    --popover: 0 0% 100%; /* White for popovers */
     --popover-foreground: 240 10% 3.9%;
 
     --primary: 208 55% 50%; /* #4682B4 Moderate Blue */
@@ -40,20 +40,18 @@
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
 
-    --sidebar-background: 206 100% 95%; /* Slightly darker than main background */
+    --sidebar-background: 210 40% 98%; /* Very light gray, e.g., Tailwind gray-50 */
     --sidebar-foreground: 240 10% 3.9%;
     --sidebar-primary: 208 55% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 160 100% 80%;
     --sidebar-accent-foreground: 160 100% 25%;
-    --sidebar-border: 208 30% 75%;
+    --sidebar-border: 208 30% 75%; /* Adjusted border */
     --sidebar-ring: 208 55% 50%;
   }
 
   .dark {
-    /* For dark mode, we can invert or choose a different palette.
-       Keeping it simple and using default dark theme variables for now.
-       If specific dark theme colors are needed, they can be defined here. */
+    /* Dark mode remains largely the same */
     --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
 
@@ -82,13 +80,13 @@
     --input: 240 3.7% 15.9%;
     --ring: 208 55% 55%;
 
-    --sidebar-background: 240 10% 5.9%;
+    --sidebar-background: 240 10% 5.9%; /* Slightly lighter than main dark background */
     --sidebar-foreground: 0 0% 98%;
     --sidebar-primary: 208 55% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 160 80% 50%;
     --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-border: 240 3.7% 15.9%; /* Adjusted border */
     --sidebar-ring: 208 55% 55%;
   }
 }
