@@ -3,6 +3,7 @@ import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 import type { Prompt, PromptType } from "@/types";
 import { PROMPT_TEMPLATES as TYPE_DEFINED_PROMPT_TEMPLATES } from "@/types";
+import { PROMPT_TYPE_NAMES } from "@/types"; // Ensure this is imported if used
 
 // This function is for the main web application
 export function cn(...inputs: ClassValue[]) {
@@ -44,19 +45,16 @@ export function copyToClipboard(
 
 // Helper function for Tampermonkey script generation
 function objectToJsStringForScript(prompt: Prompt): string {
-  // JSON.stringify creates a valid JavaScript string literal, including the outer quotes.
   const id = `    id:      ${JSON.stringify(prompt.id)}`;
   const type = `    type:    ${JSON.stringify(prompt.type)}`;
   const title = `    title:   ${JSON.stringify(prompt.title)}`;
-  const category = `    category: ${JSON.stringify(prompt.category || '')}`;
+  const category = `    category: ${JSON.stringify(prompt.category || '')}`; // Ensure category is always a string
   const content = `    content: ${JSON.stringify(prompt.content)}`;
   return `{\n${id},\n${type},\n${title},\n${category},\n${content}\n}`;
 }
 
 const TAMPERMONKEY_EDIT_URL_FOR_SCRIPT_CONST = 'extension://iikmkjmpaadaobahmlepeloendndfphd/options.html#nav=0e53e7d4-cc80-45d0-83b4-8036d8f440a3+editor';
 
-// This is the full function definition, not minified, as per user's script.
-// This function will be embedded as a string in the Tampermonkey script.
 const escapeFunctionStringForEmbeddingInScript = `
 function escapeForTemplateLiteral(str) {
     if (str === undefined || str === null) {
@@ -97,13 +95,12 @@ export function generateTampermonkeyScript(prompts: Prompt[]): string {
 // @grant        GM_xmlhttpRequest
 // ==/UserScript==
 `;
-  // Prepare the template strings from types for safe embedding
   const systemPromptTemplateForScript = JSON.stringify(TYPE_DEFINED_PROMPT_TEMPLATES.SYSTEM_PROMPT);
   const appStarterPromptTemplateForScript = JSON.stringify(TYPE_DEFINED_PROMPT_TEMPLATES.APP_STARTER_PROMPT);
   const tampermonkeyEditUrlForScript = JSON.stringify(TAMPERMONKEY_EDIT_URL_FOR_SCRIPT_CONST);
 
   return `
-${userScriptHeader.trim()};
+${userScriptHeader.trim()}
 
 (function() {
     'use strict';
@@ -479,4 +476,5 @@ ${promptsArrayString}
 })();
 `;
 }
+
 
