@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import type { Prompt, PromptType } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -88,7 +88,7 @@ export function usePrompts() {
     if (newPromptData.category && newPromptData.category.trim() !== "") {
       dataToSave.category = newPromptData.category.trim();
     } else {
-      delete dataToSave.category; // Firestore omits undefined fields, so this effectively removes it or doesn't add it
+      delete dataToSave.category; 
     }
 
     try {
@@ -175,12 +175,23 @@ export function usePrompts() {
     return prompts.filter(p => p.type === type);
   }, [prompts]);
 
+  const getUniqueCategories = useMemo(() => {
+    const categories = new Set<string>();
+    prompts.forEach(prompt => {
+      if (prompt.category && prompt.category.trim() !== "") {
+        categories.add(prompt.category.trim());
+      }
+    });
+    return Array.from(categories).sort((a,b) => a.localeCompare(b));
+  }, [prompts]);
+
   return {
     prompts,
     addPrompt,
     updatePrompt,
     deletePrompt,
     getPromptsByType,
+    getUniqueCategories,
     isLoaded,
     needsUpdate,
     setNeedsUpdate

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -24,6 +25,7 @@ import type { Prompt, PromptType } from "@/types";
 import { PROMPT_TYPES, PROMPT_TYPE_NAMES } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { suggestPromptName, SuggestPromptNameInput } from "@/ai/flows/suggest-prompt-name";
+import { usePrompts } from "@/hooks/usePrompts"; // Import usePrompts
 import { Loader2, Wand2 } from "lucide-react";
 
 interface PromptFormDialogProps {
@@ -37,22 +39,25 @@ export default function PromptFormDialog({ isOpen, onClose, onSave, prompt }: Pr
   const [title, setTitle] = useState("");
   const [type, setType] = useState<PromptType>(PROMPT_TYPES.SYSTEM as PromptType);
   const [content, setContent] = useState("");
-  const [category, setCategory] = useState(""); // Added category state
+  const [category, setCategory] = useState("");
   const [isSuggestingName, setIsSuggestingName] = useState(false);
   const { toast } = useToast();
+  const { getUniqueCategories } = usePrompts(); // Get unique categories
+
+  const uniqueCategories = getUniqueCategories; // Use directly from the hook
 
   useEffect(() => {
     if (prompt) {
       setTitle(prompt.title);
       setType(prompt.type);
       setContent(prompt.content);
-      setCategory(prompt.category || ""); // Set category or empty string
+      setCategory(prompt.category || "");
     } else {
       // Reset for new prompt
       setTitle("");
       setType(PROMPT_TYPES.SYSTEM as PromptType);
       setContent("");
-      setCategory(""); // Reset category
+      setCategory("");
     }
   }, [prompt, isOpen]);
 
@@ -104,7 +109,7 @@ export default function PromptFormDialog({ isOpen, onClose, onSave, prompt }: Pr
       title, 
       type, 
       content, 
-      category: trimmedCategory || undefined // Store undefined if category is empty, so Firestore omits it
+      category: trimmedCategory || undefined 
     };
     if (prompt && prompt.id) {
       onSave({ ...promptData, id: prompt.id });
@@ -113,6 +118,8 @@ export default function PromptFormDialog({ isOpen, onClose, onSave, prompt }: Pr
     }
     onClose();
   };
+
+  const categoryDatalistId = "existing-categories";
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -170,8 +177,14 @@ export default function PromptFormDialog({ isOpen, onClose, onSave, prompt }: Pr
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               className="col-span-3"
-              placeholder="Enter category (e.g., Email, Code, Summary)"
+              placeholder="Enter or select category (e.g., Email, Code)"
+              list={categoryDatalistId} 
             />
+            <datalist id={categoryDatalistId}>
+              {uniqueCategories.map((cat) => (
+                <option key={cat} value={cat} />
+              ))}
+            </datalist>
           </div>
           <div className="grid grid-cols-4 items-start gap-4">
             <Label htmlFor="content" className="text-right pt-2">
