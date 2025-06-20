@@ -25,9 +25,6 @@ function objectToJsString(prompt: Prompt): string {
   return `{\n${id},\n${type},\n${title},\n${content}\n}`;
 }
 
-// This helper function is now directly embedded and stringified within generateTampermonkeyScript
-// function tampermonkeyHelper_escapeForTemplateLiteral(str: string | undefined | null): string { ... }
-
 const TAMPERMONKEY_EDIT_URL = 'extension://iikmkjmpaadaobahmlepeloendndfphd/options.html#nav=0e53e7d4-cc80-45d0-83b4-8036d8f440a3+editor';
 
 export function generateTampermonkeyScript(prompts: Prompt[]): string {
@@ -38,8 +35,6 @@ export function generateTampermonkeyScript(prompts: Prompt[]): string {
   const scriptVersion = new Date().toISOString().slice(0, 10).replace(/-/g, '.');
   const lastUpdated = new Date().toLocaleString();
 
-  // This function will be stringified and embedded into the Tampermonkey script.
-  // It must be self-contained and not rely on external scope other than its arguments.
   const escapeFunctionForEmbedding = function escapeForTemplateLiteral(str) {
     if (str === undefined || str === null) {
         return '';
@@ -49,7 +44,7 @@ export function generateTampermonkeyScript(prompts: Prompt[]): string {
         .replace(/`/g, '\\`')
         .replace(/\$\{/g, '\\${');
   };
-  const escapeFunctionStringForTampermonkey = escapeFunctionForEmbedding.toString();
+  const escapeFunctionStringForTampermonkey = escapeFunctionForEmbedding.toString().replace(/^function\s*escapeForTemplateLiteral\s*\(([^)]*)\)\s*\{/, 'function l(t){');
 
 
   const scriptContent = `
@@ -65,7 +60,7 @@ export function generateTampermonkeyScript(prompts: Prompt[]): string {
 // @match        https://chatgpt.com/*
 // @match        https://m365.cloud.microsoft/chat*
 // @match        https://zebra-ai-web-prd.ait.microsoft.com/*
-// @match        https://onesupport.crm.dynamics.com/main.aspx/*
+// @match        https://onesupport.crm.dynamics.com/*
 // @grant        GM_addStyle
 // @grant        GM_info
 // @grant        GM_setValue
@@ -252,18 +247,6 @@ ${promptsArrayString}
                     this.showNotification('Tampermonkey script edit URL copied!', false, false);
                 }).catch(err => { this.showNotification('Failed to copy Edit URL.', true); });
             });
-
-            const copyPageUrlButton = document.createElement('button');
-            copyPageUrlButton.id = 'prompt-helper-copy-page-url-button';
-            copyPageUrlButton.innerHTML = 'P<span class="ph-btn-text"> Copy URL</span>';
-            copyPageUrlButton.title = 'Copy current page URL to clipboard';
-            mainButtonContainer.appendChild(copyPageUrlButton);
-            copyPageUrlButton.addEventListener('click', () => {
-                const currentUrl = window.location.href;
-                navigator.clipboard.writeText(currentUrl).then(() => {
-                    this.showNotification('Current page URL copied!', false);
-                }).catch(err => { this.showNotification('Failed to copy page URL.', true); });
-            });
         },
 
         renderPromptListModal: function(promptType, modalTitlePrefix) {
@@ -449,5 +432,3 @@ export function copyToClipboard(text: string, successMessage: string, failureMes
     });
   });
 }
-
-
