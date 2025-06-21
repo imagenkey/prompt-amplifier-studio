@@ -55,14 +55,12 @@ function objectToJsStringForScript(prompt: Prompt): string {
 
 const TAMPERMONKEY_EDIT_URL_FOR_SCRIPT_CONST = 'extension://iikmkjmpaadaobahmlepeloendndfphd/options.html#nav=0e53e7d4-cc80-45d0-83b4-8036d8f440a3+editor';
 
-const escapeFunctionStringForEmbeddingInScript = `
-function escapeForTemplateLiteral(str) {
+const escapeFunctionStringForEmbeddingInScript = `function escapeForTemplateLiteral(str) {
     if (str === undefined || str === null) {
         return '';
     }
     return String(str).replace(/\\\\/g, '\\\\\\\\').replace(/\`/g, '\\\\\`').replace(/\\\$\\{/g, '\\\\\\$\\{');
-}
-`.trim();
+}`;
 
 
 export function generateTampermonkeyScript(prompts: Prompt[]): string {
@@ -71,7 +69,7 @@ export function generateTampermonkeyScript(prompts: Prompt[]): string {
     : '        // No prompts defined. Add some in Prompt Amplifier or edit this script!';
 
   const scriptVersion = new Date().toISOString().slice(0, 10).replace(/-/g, '.');
-  const lastUpdated = new Date().toLocaleString();
+  const lastUpdated = new Date().toISOString();
 
   const userScriptHeader = `
 // ==UserScript==
@@ -116,13 +114,11 @@ ${promptsArrayString}
         ],
 
         getPrompts: function() {
-            // Ensure category exists on prompts from GM_getValue
             const storedPrompts = GM_getValue('promptAmplifierEnhancedPrompts_v1', this.initialPrompts.map(p => ({...p, id: p.id || this.generateId(), category: p.category || ''})));
             return storedPrompts.map(p => ({...p, category: p.category || ''}));
         },
 
         savePrompts: function(currentPrompts) {
-            // Ensure category exists when saving
             const promptsToSave = currentPrompts.map(p => ({...p, category: p.category || ''}));
             GM_setValue('promptAmplifierEnhancedPrompts_v1', promptsToSave);
             this.showNotification('[Prompt Amplifier] Prompts saved to local storage.', false);
@@ -146,7 +142,7 @@ ${promptsArrayString}
         escapeForTemplateLiteral: ${escapeFunctionStringForEmbeddingInScript},
 
         copyToClipboard: function(text, rawTitle, fromModalId = 'prompt-list-modal', isTemplate = false) {
-            const titleForNotification = this.escapeForTemplateLiteral(String(rawTitle || '')); // Used for display in notification
+            const titleForNotification = this.escapeForTemplateLiteral(String(rawTitle || ''));
             navigator.clipboard.writeText(text).then(() => {
                 let message = 'Copied \`' + titleForNotification + '\` to clipboard!';
                 if (isTemplate) {
@@ -241,7 +237,18 @@ ${promptsArrayString}
         },
 
         createMainUI: function() {
-            const mainButtonContainer = document.createElement('div'); mainButtonContainer.id = 'prompt-helper-button-container'; document.body.appendChild(mainButtonContainer);
+            const mainButtonContainer = document.createElement('div'); mainButtonContainer.id = 'prompt-helper-button-container';
+            this.applySavedPosition(mainButtonContainer);
+            document.body.appendChild(mainButtonContainer);
+
+            const moveHandle = document.createElement('button');
+            moveHandle.id = 'prompt-helper-move-handle';
+            moveHandle.innerHTML = '&#10021;'; // A simple move icon (e.g., a four-pointed star)
+            moveHandle.title = 'Drag to move this panel';
+            mainButtonContainer.appendChild(moveHandle);
+
+            moveHandle.addEventListener('mousedown', e => { this.onDragStart(e, mainButtonContainer); });
+
             const createPromptButton = (id, text, title, promptType) => {
                 const button = document.createElement('button'); button.id = id; button.textContent = text; button.title = title;
                 button.dataset.promptType = promptType; button.dataset.modalTitlePrefix = text;
@@ -253,9 +260,7 @@ ${promptsArrayString}
                     if (this.currentOpenModal === modalId && mE && mE.style.display === 'flex' && mE.dataset.activeType === promptType) {
                         this.hideModal(modalId);
                     } else {
-                        if (this.currentOpenModal === modalId && mE && mE.style.display === 'flex' && mE.dataset.activeType !== promptType) {
-                            this.hideModal(modalId);
-                        }
+                        if (this.currentOpenModal === modalId && mE && mE.style.display === 'flex' && mE.dataset.activeType !== promptType) { this.hideModal(modalId); }
                         this.renderPromptListModal(promptType, text);
                     }
                 });
@@ -291,8 +296,7 @@ ${promptsArrayString}
 
         renderPromptListModal: function(promptType, modalTitlePrefix) {
             const fP = this.getPrompts().filter(p => p.type === promptType);
-            const cD = document.createElement('div');
-            cD.className = 'prompt-list-items-container';
+            const cD = document.createElement('div'); cD.className = 'prompt-list-items-container';
             if (fP.length === 0) {
                 const nPM = document.createElement('p'); nPM.textContent = 'No prompts available. Please edit script or use Prompt Amplifier app to add prompts.';
                 nPM.className = 'prompt-helper-empty-message'; cD.appendChild(nPM);
@@ -300,13 +304,17 @@ ${promptsArrayString}
                 fP.forEach(p => {
                     const lIW = document.createElement('div'); lIW.className = 'prompt-helper-modal-list-item-wrapper';
                     const lI = document.createElement('div'); lI.className = 'prompt-helper-modal-list-item';
-
-                    let displayHTML = this.escapeForTemplateLiteral(p.title);
-                    if (p.category && p.category !== '') { // Check if category is not empty
-                        displayHTML += \` <span class="prompt-category-badge">\${this.escapeForTemplateLiteral(p.category)}</span>\`;
+                    lI.innerHTML = this.escapeForTemplateLiteral(p.title);
+                    if (p.category) {
+                        const cB = document.createElement('span'); cB.className = 'prompt-category-badge'; cB.textContent = p.category;
+                        const style = this.getCategoryStyleTm(p.category);
+                        if (style) {
+                            lIW.style.backgroundColor = style.cardBg;
+                            cB.style.backgroundColor = style.badgeBg; cB.style.color = style.badgeText;
+                            cB.style.border = \`1px solid \${style.badgeBorder}\`;
+                        }
+                        lI.appendChild(document.createTextNode(' ')); lI.appendChild(cB);
                     }
-                    lI.innerHTML = displayHTML;
-
                     const titleAttrContent = String(p.content || '').replace(/'/g, "\\\\'").substring(0, 100) + (String(p.content || '').length > 100 ? '...' : '');
                     lI.title = 'Click to copy: ' + titleAttrContent;
                     const pB = document.createElement('button'); pB.className = 'prompt-helper-preview-button';
@@ -325,7 +333,6 @@ ${promptsArrayString}
             const templateKey = promptType === 'SYSTEM_PROMPT' ? 'SYSTEM_PROMPT' : 'APP_STARTER_PROMPT';
             const templateString = PROMPT_TEMPLATES[templateKey];
             const templateTitle = promptType === 'SYSTEM_PROMPT' ? 'System Prompt Template' : 'App Starter Prompt Template';
-
             footerButtons.push({ text: 'Copy Template', innerHTML: 'T<span class="ph-btn-text"> Copy Template</span>', className: 'prompt-helper-preset-button', handler: () => { this.copyToClipboard(templateString, templateTitle, mId, true); } });
             footerButtons.push({ text: 'Close', className: 'secondary', handler: () => this.hideModal(mId) });
             const m = this.createModal(mId, modalTitlePrefix + ' List', cD, footerButtons);
@@ -335,7 +342,8 @@ ${promptsArrayString}
             if (mBC && mD) {
                 const cR = mBC.getBoundingClientRect();
                 mD.style.position = 'fixed'; mD.style.top = (cR.bottom + 10) + 'px';
-                mD.style.left = '50%'; mD.style.transform = 'translateX(-50%)';
+                mD.style.left = cR.left + 'px';
+                mD.style.transform = 'translateX(0)';
                 mD.style.right = 'auto'; mD.style.bottom = 'auto'; mD.style.margin = '0';
             }
             this.showModal(mId);
@@ -359,110 +367,150 @@ ${promptsArrayString}
             this.showModal(mId);
         },
 
+        categoryStylesTm: [ {cardBg:"hsl(206, 90%, 95%)",badgeBg:"hsl(206, 100%, 92%)",badgeText:"hsl(206, 100%, 25%)",badgeBorder:"hsl(206, 90%, 85%)"}, {cardBg:"hsl(217, 91%, 95%)",badgeBg:"hsl(217, 95%, 92%)",badgeText:"hsl(217, 91%, 30%)",badgeBorder:"hsl(217, 91%, 85%)"}, {cardBg:"hsl(243, 93%, 96%)",badgeBg:"hsl(243, 97%, 93%)",badgeText:"hsl(243, 93%, 35%)",badgeBorder:"hsl(243, 93%, 88%)"}, {cardBg:"hsl(143, 85%, 96%)",badgeBg:"hsl(143, 90%, 93%)",badgeText:"hsl(143, 85%, 28%)",badgeBorder:"hsl(143, 85%, 88%)"}, {cardBg:"hsl(145, 75%, 95%)",badgeBg:"hsl(145, 80%, 92%)",badgeText:"hsl(145, 75%, 25%)",badgeBorder:"hsl(145, 75%, 85%)"}, {cardBg:"hsl(76, 80%, 95%)",badgeBg:"hsl(76, 85%, 92%)",badgeText:"hsl(76, 80%, 25%)",badgeBorder:"hsl(76, 80%, 85%)"}, {cardBg:"hsl(173, 80%, 95%)",badgeBg:"hsl(173, 85%, 92%)",badgeText:"hsl(173, 80%, 25%)",badgeBorder:"hsl(173, 80%, 85%)"}, {cardBg:"hsl(184, 88%, 95%)",badgeBg:"hsl(184, 92%, 92%)",badgeText:"hsl(184, 88%, 25%)",badgeBorder:"hsl(184, 88%, 85%)"}, {cardBg:"hsl(45, 93%, 95%)",badgeBg:"hsl(45, 96%, 92%)",badgeText:"hsl(45, 93%, 28%)",badgeBorder:"hsl(45, 93%, 85%)"}, {cardBg:"hsl(54, 94%, 95%)",badgeBg:"hsl(54, 97%, 92%)",badgeText:"hsl(54, 94%, 28%)",badgeBorder:"hsl(54, 94%, 85%)"}, {cardBg:"hsl(25, 95%, 95%)",badgeBg:"hsl(25, 98%, 92%)",badgeText:"hsl(25, 95%, 35%)",badgeBorder:"hsl(25, 95%, 85%)"}, {cardBg:"hsl(347, 89%, 96%)",badgeBg:"hsl(347, 92%, 93%)",badgeText:"hsl(347, 89%, 38%)",badgeBorder:"hsl(347, 89%, 88%)"}, {cardBg:"hsl(0, 84%, 96%)",badgeBg:"hsl(0, 88%, 93%)",badgeText:"hsl(0, 84%, 40%)",badgeBorder:"hsl(0, 84%, 88%)"}, {cardBg:"hsl(336, 84%, 96%)",badgeBg:"hsl(336, 88%, 93%)",badgeText:"hsl(336, 84%, 38%)",badgeBorder:"hsl(336, 84%, 88%)"}, {cardBg:"hsl(300, 76%, 96%)",badgeBg:"hsl(300, 80%, 93%)",badgeText:"hsl(300, 76%, 35%)",badgeBorder:"hsl(300, 76%, 88%)"}, {cardBg:"hsl(262, 84%, 97%)",badgeBg:"hsl(262, 88%, 94%)",badgeText:"hsl(262, 84%, 40%)",badgeBorder:"hsl(262, 84%, 90%)"}, {cardBg:"hsl(220, 15%, 96%)",badgeBg:"hsl(220, 18%, 93%)",badgeText:"hsl(220, 15%, 35%)",badgeBorder:"hsl(220, 15%, 88%)"} ],
+        getCategoryStyleTm: function(categoryName) {
+            if (!categoryName) return null;
+            let hash = 0;
+            for (let i = 0; i < categoryName.length; i++) { hash = (hash << 5) - hash + categoryName.charCodeAt(i); hash |= 0; }
+            return this.categoryStylesTm[Math.abs(hash) % this.categoryStylesTm.length];
+        },
+        positions: {},
+        dragState: { isDragging: false, startX: 0, startY: 0, elStartX: 0, elStartY: 0 },
+
+        onDragStart: function(e, container) {
+            if (e.target.id !== 'prompt-helper-move-handle') return;
+            e.preventDefault();
+            this.dragState.isDragging = true;
+            this.dragState.startX = e.clientX;
+            this.dragState.startY = e.clientY;
+            this.dragState.elStartX = container.offsetLeft;
+            this.dragState.elStartY = container.offsetTop;
+            document.addEventListener('mousemove', this.onDragging.bind(this, container));
+            document.addEventListener('mouseup', this.onDragEnd.bind(this, container));
+            container.classList.add('dragging');
+        },
+        onDragging: function(container, e) {
+            if (!this.dragState.isDragging) return;
+            e.preventDefault();
+            const dx = e.clientX - this.dragState.startX;
+            const dy = e.clientY - this.dragState.startY;
+            container.style.left = (this.dragState.elStartX + dx) + 'px';
+            container.style.top = (this.dragState.elStartY + dy) + 'px';
+            container.style.transform = ''; // Clear transform when dragging
+        },
+        onDragEnd: function(container, e) {
+            if (!this.dragState.isDragging) return;
+            e.preventDefault();
+            this.dragState.isDragging = false;
+            document.removeEventListener('mousemove', this.onDragging.bind(this, container));
+            document.removeEventListener('mouseup', this.onDragEnd.bind(this, container));
+            container.classList.remove('dragging');
+            this.saveCurrentPosition(container);
+        },
+        saveCurrentPosition: function(container) {
+            const pos = { top: container.style.top, left: container.style.left };
+            this.positions[window.location.hostname] = pos;
+            GM_setValue('promptAmplifierPositions_v1', this.positions);
+            this.showNotification('Panel position saved for this site.', false);
+        },
+        applySavedPosition: function(container) {
+            const savedPos = this.positions[window.location.hostname];
+            if (savedPos && savedPos.top && savedPos.left) {
+                container.style.top = savedPos.top;
+                container.style.left = savedPos.left;
+                container.style.transform = '';
+            } else {
+                container.style.top = '10px';
+                container.style.left = '50%';
+                container.style.transform = 'translateX(-50%)';
+            }
+        },
+        resetCurrentSitePosition: function() {
+            if (this.positions[window.location.hostname]) {
+                delete this.positions[window.location.hostname];
+                GM_setValue('promptAmplifierPositions_v1', this.positions);
+                this.showNotification('Position for this site has been reset. Please reload the page.', false, true);
+                setTimeout(() => window.location.reload(), 1500);
+            } else {
+                this.showNotification('No saved position to reset for this site.', true);
+            }
+        },
         init: function() {
+            this.positions = GM_getValue('promptAmplifierPositions_v1', {});
             GM_addStyle(\`
                 :root {
                     --ph-modal-z-index: 10001;
-                    --ph-button-bg-color: #4682B4; /* Moderate Blue - S-Prompts */
-                    --ph-button-hover-bg-color: #3b6b92; /* Darker Moderate Blue */
-                    --ph-app-starter-bg-color: #9C27B0; /* Vibrant Purple - A-Prompts */
-                    --ph-app-starter-hover-bg-color: #7B1FA2; /* Darker Vibrant Purple */
-                    --ph-edit-button-bg-color: #A9A9A9; /* Dark Gray - E Edit URL */
-                    --ph-edit-button-hover-bg-color: #8c8c8c; /* Darker Gray */
-                    --ph-copy-url-button-bg-color: #4CAF50; /* Green - P Copy URL */
-                    --ph-copy-url-button-hover-bg-color: #45a049; /* Darker Green */
-                    --ph-toast-warning-bg-color: #ffeb3b; /* Yellow */
-                    --ph-toast-warning-text-color: #202124;
-                    --ph-preset-button-bg-color: #F0F8FF; /* Alice Blue */
-                    --ph-preset-button-text-color: var(--ph-button-bg-color);
-                    --ph-preset-button-border-color: #d1e0ec; /* Lighter Moderate Blue */
-                    --ph-preset-button-hover-bg-color: #d1e0ec;
+                    --ph-button-bg-color: #4682B4; --ph-button-hover-bg-color: #3b6b92;
+                    --ph-app-starter-bg-color: #9C27B0; --ph-app-starter-hover-bg-color: #7B1FA2;
+                    --ph-edit-button-bg-color: #A9A9A9; --ph-edit-button-hover-bg-color: #8c8c8c;
+                    --ph-copy-url-button-bg-color: #4CAF50; --ph-copy-url-button-hover-bg-color: #45a049;
+                    --ph-move-handle-bg-color: #78909C; --ph-move-handle-hover-bg-color: #546E7A;
+                    --ph-toast-warning-bg-color: #ffeb3b; --ph-toast-warning-text-color: #202124;
+                    --ph-preset-button-bg-color: #FFFFFF; --ph-preset-button-text-color: var(--ph-button-bg-color);
+                    --ph-preset-button-border-color: #d1e0ec; --ph-preset-button-hover-bg-color: #e6f2ff;
                 }
                 #prompt-helper-button-container {
-                    position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
-                    z-index: 9999; display: flex; gap: 10px; margin-left: 30px;
+                    position: fixed; z-index: 9999; display: flex; gap: 10px;
+                    background-color: rgba(255, 255, 255, 0.8); backdrop-filter: blur(4px);
+                    padding: 6px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                    border: 1px solid rgba(0,0,0,0.1);
                 }
+                #prompt-helper-button-container.dragging { cursor: grabbing; box-shadow: 0 8px 20px rgba(0,0,0,0.25); }
                 #prompt-helper-button-container button {
                     color: white; border: none; border-radius: 6px; padding: 9px 14px;
                     font-size: 13.5px; font-weight: 500; cursor: pointer;
                     box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.18);
-                    transition: all 0.2s ease-in-out; display: flex; align-items: center;
-                    justify-content: center; line-height: 1.2;
+                    transition: all 0.2s ease-in-out; display: flex; align-items: center; justify-content: center; line-height: 1.2;
                 }
-                #prompt-helper-button-container button:hover {
-                    transform: translateY(-1px);
-                    box-shadow: 0 2px 5px rgba(0,0,0,0.15), 0 2px 5px rgba(0,0,0,0.22);
-                }
+                #prompt-helper-button-container button:hover { transform: translateY(-1px); box-shadow: 0 2px 5px rgba(0,0,0,0.15), 0 2px 5px rgba(0,0,0,0.22); }
                 #prompt-helper-button-container button .ph-btn-text { margin-left: 6px; }
+                #prompt-helper-move-handle { background-color: var(--ph-move-handle-bg-color); cursor: grab; padding: 9px 10px; font-size: 16px; }
+                #prompt-helper-move-handle:hover { background-color: var(--ph-move-handle-hover-bg-color); }
                 #prompt-helper-system-button { background-color: var(--ph-button-bg-color); }
                 #prompt-helper-system-button:hover { background-color: var(--ph-button-hover-bg-color); }
-                #prompt-helper-app-starter-button { background-color: var(--ph-app-starter-bg-color); color: white; }
+                #prompt-helper-app-starter-button { background-color: var(--ph-app-starter-bg-color); }
                 #prompt-helper-app-starter-button:hover { background-color: var(--ph-app-starter-hover-bg-color); }
                 #prompt-helper-edit-script-button { background-color: var(--ph-edit-button-bg-color); }
                 #prompt-helper-edit-script-button:hover { background-color: var(--ph-edit-button-hover-bg-color); }
                 #prompt-helper-copy-page-url-button { background-color: var(--ph-copy-url-button-bg-color); }
                 #prompt-helper-copy-page-url-button:hover { background-color: var(--ph-copy-url-button-hover-bg-color); }
-
                 .prompt-helper-toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); padding: 12px 22px; color: white; border-radius: 6px; z-index: calc(var(--ph-modal-z-index) + 100); box-shadow: 0 3px 8px rgba(0,0,0,0.25); font-size: 14.5px; display: none; white-space: pre-wrap; text-align: center; max-width: 85%;}
                 .prompt-helper-toast.success { background-color: #4CAF50; }
                 .prompt-helper-toast.error { background-color: #f44336; }
                 .prompt-helper-toast.warning { background-color: var(--ph-toast-warning-bg-color); color: var(--ph-toast-warning-text-color); }
-
                 .prompt-helper-modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.4); align-items: flex-start; justify-content: center; }
-                .prompt-helper-modal-dialog { background-color: #F0F8FF; border-radius: 8px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); width: 450px; max-height: calc(85vh - 60px); display: flex; flex-direction: column; color: #000; }
+                .prompt-helper-modal-dialog { background-color: #FFFFFF; border-radius: 8px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); width: 450px; max-height: calc(85vh - 60px); display: flex; flex-direction: column; color: #000; border: 1px solid #E5E7EB; }
                 .prompt-helper-preview-dialog { width: 90% !important; max-width: 700px !important; max-height: 80vh !important; }
-                .prompt-helper-modal-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-bottom: 1px solid #d1e0ec; }
+                .prompt-helper-modal-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-bottom: 1px solid #E5E7EB; }
                 .prompt-helper-modal-header h3 { margin: 0; font-size: 17px; color: var(--ph-button-bg-color); font-weight: 600; }
                 .prompt-helper-modal-close { background: none; border: none; font-size: 24px; font-weight: normal; color: #555; cursor: pointer; padding: 0 5px; line-height: 1; }
                 .prompt-helper-modal-close:hover { color: #000; }
-                .prompt-helper-modal-content { padding: 20px; overflow-y: auto; flex-grow: 1; }
-                .prompt-helper-modal-footer { padding: 14px 20px; border-top: 1px solid #d1e0ec; text-align: right; background-color: #e6f2ff; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; display: flex; justify-content: flex-end; gap: 8px; }
-                .prompt-helper-button { padding: 8px 16px; border: 1px solid #b8d2e6; border-radius: 5px; cursor: pointer; font-size: 13.5px; font-weight: 500; display: flex; align-items: center; }
-
+                .prompt-helper-modal-content { padding: 0; overflow-y: auto; flex-grow: 1; }
+                .prompt-helper-modal-footer { padding: 14px 20px; border-top: 1px solid #E5E7EB; text-align: right; background-color: #F9FAFB; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; display: flex; justify-content: flex-end; gap: 8px; }
+                .prompt-helper-button { padding: 8px 16px; border: 1px solid #D1D5DB; border-radius: 5px; cursor: pointer; font-size: 13.5px; font-weight: 500; display: flex; align-items: center; }
                 .prompt-helper-button.primary { background-color: var(--ph-button-bg-color); color: white; border-color: var(--ph-button-bg-color); }
                 .prompt-helper-button.primary:hover { background-color: var(--ph-button-hover-bg-color); border-color: var(--ph-button-hover-bg-color); }
-                .prompt-helper-button.secondary { background-color: #fff; color: var(--ph-button-bg-color); border-color: #b8d2e6; }
-                .prompt-helper-button.secondary:hover { background-color: #e6f2ff; border-color: var(--ph-button-hover-bg-color); }
-
-                .prompt-helper-preset-button {
-                    background-color: var(--ph-preset-button-bg-color); color: var(--ph-preset-button-text-color);
-                    border: 1px solid var(--ph-preset-button-border-color);
-                }
-                .prompt-helper-preset-button:hover {
-                    background-color: var(--ph-preset-button-hover-bg-color); border-color: var(--ph-preset-button-text-color);
-                }
-
+                .prompt-helper-button.secondary { background-color: #fff; color: var(--ph-button-bg-color); }
+                .prompt-helper-button.secondary:hover { background-color: #F3F4F6; border-color: var(--ph-button-hover-bg-color); }
+                .prompt-helper-preset-button { background-color: var(--ph-preset-button-bg-color); color: var(--ph-preset-button-text-color); border: 1px solid var(--ph-preset-button-border-color); }
+                .prompt-helper-preset-button:hover { background-color: var(--ph-preset-button-hover-bg-color); border-color: var(--ph-preset-button-text-color); }
                 .prompt-list-items-container { max-height: 320px; }
-                .prompt-helper-modal-list-item-wrapper { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #d1e0ec; transition: background-color 0.15s; cursor: pointer; }
+                .prompt-helper-modal-list-item-wrapper { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E5E7EB; transition: background-color 0.15s; }
                 .prompt-helper-modal-list-item-wrapper:last-child { border-bottom: none; }
-                .prompt-helper-modal-list-item-wrapper:hover { background-color: #e6f2ff; }
-                .prompt-helper-modal-list-item { flex-grow: 1; padding: 13px 12px; font-size: 14px; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-                .prompt-category-badge { /* Style for the category badge in Tampermonkey */
-                    font-size: 0.8em;
-                    padding: 2px 5px;
-                    background-color: #e0e0e0; /* Default badge color */
-                    color: #333;
-                    border-radius: 4px;
-                    margin-left: 8px;
-                    font-weight: normal;
-                    vertical-align: middle;
-                }
-
+                .prompt-helper-modal-list-item-wrapper:hover { background-color: #F3F4F6; }
+                .prompt-helper-modal-list-item { flex-grow: 1; padding: 13px 12px; font-size: 14px; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+                .prompt-category-badge { font-size: 0.85em; padding: 4px 7px; border-radius: 5px; margin-left: 8px; font-weight: 500; vertical-align: middle; border-width: 1px; border-style: solid; }
                 .prompt-helper-preview-button { background: none; border: none; color: #555; cursor: pointer; padding: 8px 12px; font-size: 18px; border-radius: 4px; transition: background-color 0.2s, color 0.2s; }
-                .prompt-helper-preview-button:hover { color: var(--ph-button-bg-color); background-color: #d1e0ec; }
+                .prompt-helper-preview-button:hover { color: var(--ph-button-bg-color); background-color: #E5E7EB; }
                 .prompt-helper-empty-message { color: #555; text-align: center; padding: 25px 0; font-style: italic;}
-                .prompt-preview-content { background-color: #e6f2ff; padding: 20px; border: 1px solid #b8d2e6; border-radius: 6px; max-height: calc(80vh - 160px); overflow-y: auto; }
+                .prompt-preview-content { background-color: #F3F4F6; padding: 20px; border: 1px solid #D1D5DB; border-radius: 6px; max-height: calc(80vh - 160px); overflow-y: auto; }
                 .prompt-preview-content pre { white-space: pre-wrap; word-wrap: break-word; margin: 0; font-family: 'Source Code Pro', Consolas, "Courier New", monospace, "Noto Sans JP", sans-serif; font-size: 13.5px; line-height: 1.65; color: #111; }
             \`);
             GM_registerMenuCommand("Reset Prompts (Prompt Amplifier)", this.resetPrompts.bind(this));
+            GM_registerMenuCommand("Reset Button Position for This Site", this.resetCurrentSitePosition.bind(this));
             console.log('[Prompt Amplifier] Enhanced script initialized. Access prompts via PROMPT_AMPLIFIER_DATA.getPrompts()');
-
-            // Ensure initialPrompts have IDs and category
             this.initialPrompts = this.initialPrompts.map(p => ({...p, id: p.id || this.generateId(), category: p.category || ''}));
-            // Always overwrite storage with script's initialPrompts on init
             GM_setValue('promptAmplifierEnhancedPrompts_v1', this.initialPrompts);
-
             setTimeout(() => this.createMainUI(), 800);
         }
     };
@@ -476,5 +524,4 @@ ${promptsArrayString}
 })();
 `;
 }
-
-
+    
