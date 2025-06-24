@@ -85,6 +85,7 @@ export function generateTampermonkeyScript(prompts: Prompt[]): string {
 // @match        https://m365.cloud.microsoft/chat*
 // @match        https://zebra-ai-web-prd.ait.microsoft.com/*
 // @match        https://onesupport.crm.dynamics.com/*
+// @match        https://studio.firebase.google.com/*
 // @grant        GM_addStyle
 // @grant        GM_info
 // @grant        GM_setValue
@@ -311,7 +312,7 @@ ${promptsArrayString}
                         if (style) {
                             lIW.style.backgroundColor = style.cardBg;
                             cB.style.backgroundColor = style.badgeBg; cB.style.color = style.badgeText;
-                            cB.style.border = \`1px solid \${style.badgeBorder}\`;
+                            cB.style.border = '1px solid ' + style.badgeBorder;
                         }
                         lI.appendChild(document.createTextNode(' ')); lI.appendChild(cB);
                     }
@@ -524,4 +525,3 @@ ${promptsArrayString}
 })();
 `;
 }
-    
