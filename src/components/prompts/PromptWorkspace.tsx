@@ -6,6 +6,7 @@ import { usePrompts } from "@/hooks/usePrompts";
 import PromptCategorySection from "./PromptCategorySection";
 import PromptFormDialog from "./PromptFormDialog";
 import SettingsDialog from "./SettingsDialog";
+import { HelpDialog } from "@/components/layout/HelpDialog";
 import type { Prompt } from "@/types";
 import { PROMPT_TYPES, PROMPT_TYPE_NAMES } from "@/types";
 import AppHeader from "@/components/layout/AppHeader";
@@ -27,6 +28,7 @@ export default function PromptWorkspace() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingPrompt, setEditingPrompt] = useState<Prompt | undefined>(undefined);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
   const { tampermonkeyUrl, isLoaded: prefsLoaded } = useUserPreferences();
 
   const handleOpenForm = (prompt?: Prompt) => {
@@ -94,6 +96,7 @@ export default function PromptWorkspace() {
         needsUpdate={needsUpdate}
         setNeedsUpdate={setNeedsUpdate}
         onOpenSettings={() => setIsSettingsOpen(true)}
+        onOpenHelp={() => setIsHelpOpen(true)}
         tampermonkeyUrl={tampermonkeyUrl}
       />
       <main className="container mx-auto px-4 py-8 flex-grow">
@@ -121,6 +124,10 @@ export default function PromptWorkspace() {
       <SettingsDialog
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
+      />
+      <HelpDialog
+        isOpen={isHelpOpen}
+        onOpenChange={setIsHelpOpen}
       />
        <footer className="py-6 md:px-8 md:py-0 border-t bg-background/80">
           <div className="container flex flex-col items-center justify-center gap-4 md:h-20 md:flex-row">

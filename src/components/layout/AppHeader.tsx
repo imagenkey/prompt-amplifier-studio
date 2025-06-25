@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { generateTampermonkeyScript, copyToClipboard as copyUtil } from "@/lib/utils";
 import type { Prompt } from "@/types";
-import { FilePlus2, Copy, ExternalLink, AlertTriangle, Settings } from "lucide-react"; // Import Settings
+import { FilePlus2, Copy, ExternalLink, AlertTriangle, Settings, HelpCircle } from "lucide-react";
 import LogoIcon from "@/components/icons/LogoIcon";
 import AuthStatus from "@/components/auth/AuthStatus";
 
@@ -13,8 +13,9 @@ interface AppHeaderProps {
   onAddNewPrompt: () => void;
   needsUpdate: boolean;
   setNeedsUpdate: (value: boolean) => void;
-  onOpenSettings: () => void; // New prop
-  tampermonkeyUrl: string; // New prop
+  onOpenSettings: () => void;
+  onOpenHelp: () => void; // New prop for help
+  tampermonkeyUrl: string;
 }
 
 export default function AppHeader({ 
@@ -23,6 +24,7 @@ export default function AppHeader({
   needsUpdate, 
   setNeedsUpdate,
   onOpenSettings,
+  onOpenHelp,
   tampermonkeyUrl
 }: AppHeaderProps) {
   const { toast } = useToast();
@@ -64,6 +66,9 @@ export default function AppHeader({
         </div>
         <div className="flex items-center gap-2">
           <AuthStatus />
+          <Button variant="ghost" size="icon" onClick={onOpenHelp} title="Help">
+            <HelpCircle className="h-5 w-5" />
+          </Button>
           <Button variant="ghost" size="icon" onClick={onOpenSettings} title="Settings">
             <Settings className="h-5 w-5" />
           </Button>
