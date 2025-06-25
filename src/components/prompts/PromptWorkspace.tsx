@@ -1,13 +1,16 @@
+
 "use client";
 
 import { useState } from "react";
 import { usePrompts } from "@/hooks/usePrompts";
 import PromptCategorySection from "./PromptCategorySection";
 import PromptFormDialog from "./PromptFormDialog";
+import SettingsDialog from "./SettingsDialog";
 import type { Prompt } from "@/types";
 import { PROMPT_TYPES, PROMPT_TYPE_NAMES } from "@/types";
 import AppHeader from "@/components/layout/AppHeader";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useUserPreferences } from "@/hooks/useUserPreferences";
 
 export default function PromptWorkspace() {
   const { 
@@ -23,6 +26,8 @@ export default function PromptWorkspace() {
   
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingPrompt, setEditingPrompt] = useState<Prompt | undefined>(undefined);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const { tampermonkeyUrl, isLoaded: prefsLoaded } = useUserPreferences();
 
   const handleOpenForm = (prompt?: Prompt) => {
     setEditingPrompt(prompt);
@@ -42,7 +47,7 @@ export default function PromptWorkspace() {
     }
   };
 
-  if (!isLoaded) {
+  if (!isLoaded || !prefsLoaded) {
     return (
       <div className="flex flex-col flex-grow">
         <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -52,10 +57,11 @@ export default function PromptWorkspace() {
                     <Skeleton className="h-6 w-48" />
                 </div>
                 <div className="flex items-center gap-2">
-                    <Skeleton className="h-10 w-36" />
+                    <Skeleton className="h-10 w-10 rounded-full" />
+                    <Skeleton className="h-10 w-10 rounded-full" />
+                    <Skeleton className="h-10 w-40" />
                     <Skeleton className="h-10 w-48" />
-                    <Skeleton className="h-10 w-24" />
-                    <Skeleton className="h-10 w-24" />
+                    <Skeleton className="h-10 w-48" />
                 </div>
             </div>
         </header>
@@ -87,6 +93,8 @@ export default function PromptWorkspace() {
         onAddNewPrompt={() => handleOpenForm()}
         needsUpdate={needsUpdate}
         setNeedsUpdate={setNeedsUpdate}
+        onOpenSettings={() => setIsSettingsOpen(true)}
+        tampermonkeyUrl={tampermonkeyUrl}
       />
       <main className="container mx-auto px-4 py-8 flex-grow">
         <PromptCategorySection
@@ -109,6 +117,10 @@ export default function PromptWorkspace() {
         onClose={handleCloseForm}
         onSave={handleSavePrompt}
         prompt={editingPrompt}
+      />
+      <SettingsDialog
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
       />
        <footer className="py-6 md:px-8 md:py-0 border-t bg-background/80">
           <div className="container flex flex-col items-center justify-center gap-4 md:h-20 md:flex-row">
