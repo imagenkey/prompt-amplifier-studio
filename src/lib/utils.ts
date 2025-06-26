@@ -305,7 +305,7 @@ ${promptsArrayString}
                 fP.forEach(p => {
                     const lIW = document.createElement('div'); lIW.className = 'prompt-helper-modal-list-item-wrapper';
                     const lI = document.createElement('div'); lI.className = 'prompt-helper-modal-list-item';
-                    lI.innerHTML = this.escapeForTemplateLiteral(p.title);
+
                     if (p.category) {
                         const cB = document.createElement('span'); cB.className = 'prompt-category-badge'; cB.textContent = p.category;
                         const style = this.getCategoryStyleTm(p.category);
@@ -314,8 +314,11 @@ ${promptsArrayString}
                             cB.style.backgroundColor = style.badgeBg; cB.style.color = style.badgeText;
                             cB.style.border = '1px solid ' + style.badgeBorder;
                         }
-                        lI.appendChild(document.createTextNode(' ')); lI.appendChild(cB);
+                        lI.appendChild(cB);
+                        lI.appendChild(document.createTextNode(' '));
                     }
+                    lI.appendChild(document.createTextNode(p.title));
+
                     const titleAttrContent = String(p.content || '').replace(/'/g, "\\\\'").substring(0, 100) + (String(p.content || '').length > 100 ? '...' : '');
                     lI.title = 'Click to copy: ' + titleAttrContent;
                     const pB = document.createElement('button'); pB.className = 'prompt-helper-preview-button';
@@ -331,10 +334,6 @@ ${promptsArrayString}
             }
             const mId = 'prompt-list-modal';
             const footerButtons = [];
-            const templateKey = promptType === 'SYSTEM_PROMPT' ? 'SYSTEM_PROMPT' : 'APP_STARTER_PROMPT';
-            const templateString = PROMPT_TEMPLATES[templateKey];
-            const templateTitle = promptType === 'SYSTEM_PROMPT' ? 'System Prompt Template' : 'App Starter Prompt Template';
-            footerButtons.push({ text: 'Copy Template', innerHTML: 'T<span class="ph-btn-text"> Copy Template</span>', className: 'prompt-helper-preset-button', handler: () => { this.copyToClipboard(templateString, templateTitle, mId, true); } });
             footerButtons.push({ text: 'Close', className: 'secondary', handler: () => this.hideModal(mId) });
             const m = this.createModal(mId, modalTitlePrefix + ' List', cD, footerButtons);
             m.dataset.activeType = promptType;
@@ -495,12 +494,12 @@ ${promptsArrayString}
                 .prompt-helper-button.secondary:hover { background-color: #F3F4F6; border-color: var(--ph-button-hover-bg-color); }
                 .prompt-helper-preset-button { background-color: var(--ph-preset-button-bg-color); color: var(--ph-preset-button-text-color); border: 1px solid var(--ph-preset-button-border-color); }
                 .prompt-helper-preset-button:hover { background-color: var(--ph-preset-button-hover-bg-color); border-color: var(--ph-preset-button-text-color); }
-                .prompt-list-items-container { max-height: 320px; }
+                .prompt-list-items-container { max-height: 60vh; }
                 .prompt-helper-modal-list-item-wrapper { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E5E7EB; transition: background-color 0.15s; }
                 .prompt-helper-modal-list-item-wrapper:last-child { border-bottom: none; }
                 .prompt-helper-modal-list-item-wrapper:hover { background-color: #F3F4F6; }
                 .prompt-helper-modal-list-item { flex-grow: 1; padding: 13px 12px; font-size: 14px; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
-                .prompt-category-badge { font-size: 0.85em; padding: 4px 7px; border-radius: 5px; margin-left: 8px; font-weight: 500; vertical-align: middle; border-width: 1px; border-style: solid; }
+                .prompt-category-badge { font-size: 0.85em; padding: 4px 7px; border-radius: 5px; margin-right: 8px; font-weight: 500; vertical-align: middle; border-width: 1px; border-style: solid; }
                 .prompt-helper-preview-button { background: none; border: none; color: #555; cursor: pointer; padding: 8px 12px; font-size: 18px; border-radius: 4px; transition: background-color 0.2s, color 0.2s; }
                 .prompt-helper-preview-button:hover { color: var(--ph-button-bg-color); background-color: #E5E7EB; }
                 .prompt-helper-empty-message { color: #555; text-align: center; padding: 25px 0; font-style: italic;}
