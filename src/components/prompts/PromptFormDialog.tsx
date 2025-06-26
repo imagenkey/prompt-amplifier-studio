@@ -27,6 +27,7 @@ import { useToast } from "@/hooks/use-toast";
 import { suggestPromptName, SuggestPromptNameInput } from "@/ai/flows/suggest-prompt-name";
 import { usePrompts } from "@/hooks/usePrompts"; // Import usePrompts
 import { Loader2, Wand2 } from "lucide-react";
+import { CreatableCombobox } from "@/components/ui/creatable-combobox";
 
 interface PromptFormDialogProps {
   isOpen: boolean;
@@ -119,8 +120,6 @@ export default function PromptFormDialog({ isOpen, onClose, onSave, prompt }: Pr
     onClose();
   };
 
-  const categoryDatalistId = "existing-categories";
-
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-[600px] bg-card text-card-foreground">
@@ -172,19 +171,14 @@ export default function PromptFormDialog({ isOpen, onClose, onSave, prompt }: Pr
             <Label htmlFor="category" className="text-right">
               Category
             </Label>
-            <Input
-              id="category"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="col-span-3"
-              placeholder="Enter or select category (e.g., Email, Code)"
-              list={categoryDatalistId} 
-            />
-            <datalist id={categoryDatalistId}>
-              {uniqueCategories.map((cat) => (
-                <option key={cat} value={cat} />
-              ))}
-            </datalist>
+            <div className="col-span-3">
+              <CreatableCombobox
+                value={category}
+                onChange={setCategory}
+                options={uniqueCategories.map(cat => ({ value: cat, label: cat }))}
+                placeholder="Select or create a category"
+              />
+            </div>
           </div>
           <div className="grid grid-cols-4 items-start gap-4">
             <Label htmlFor="content" className="text-right pt-2">
