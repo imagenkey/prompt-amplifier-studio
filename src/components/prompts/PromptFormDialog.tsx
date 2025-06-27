@@ -90,7 +90,10 @@ export default function PromptFormDialog({ isOpen, onClose, onSave, prompt }: Pr
     }
     setIsSuggestingName(true);
     try {
-      const input: SuggestPromptNameInput = { promptContent: content };
+      const input: SuggestPromptNameInput = { 
+        promptContent: content,
+        isQuickAction: type === PROMPT_TYPES.QUICK_ACTION
+      };
       const result = await suggestPromptName(input);
       if (result.promptName) {
         setTitle(result.promptName);
