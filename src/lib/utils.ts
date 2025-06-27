@@ -96,6 +96,7 @@ export function generateTampermonkeyScript(prompts: Prompt[]): string {
 `;
   const systemPromptTemplateForScript = JSON.stringify(TYPE_DEFINED_PROMPT_TEMPLATES.SYSTEM_PROMPT);
   const appStarterPromptTemplateForScript = JSON.stringify(TYPE_DEFINED_PROMPT_TEMPLATES.APP_STARTER_PROMPT);
+  const quickActionTemplateForScript = JSON.stringify(TYPE_DEFINED_PROMPT_TEMPLATES.QUICK_ACTION);
   const tampermonkeyEditUrlForScript = JSON.stringify(TAMPERMONKEY_EDIT_URL_FOR_SCRIPT_CONST);
 
   return `
@@ -106,7 +107,8 @@ ${userScriptHeader.trim()}
 
     const PROMPT_TEMPLATES = {
         SYSTEM_PROMPT: ${systemPromptTemplateForScript},
-        APP_STARTER_PROMPT: ${appStarterPromptTemplateForScript}
+        APP_STARTER_PROMPT: ${appStarterPromptTemplateForScript},
+        QUICK_ACTION: ${quickActionTemplateForScript}
     };
 
     const PROMPT_AMPLIFIER_DATA = {
@@ -267,6 +269,21 @@ ${promptsArrayString}
                 });
                 return button;
             };
+            const quickActions = this.getPrompts().filter(p => p.type === 'QUICK_ACTION');
+            if(quickActions.length > 0) {
+                quickActions.forEach(action => {
+                    const button = document.createElement('button');
+                    button.textContent = action.title;
+                    button.title = \`Copy: "\${action.content}"\`;
+                    button.className = 'prompt-helper-preset-button';
+                    button.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.copyToClipboard(action.content, action.title);
+                    });
+                    mainButtonContainer.appendChild(button);
+                });
+            }
+
             createPromptButton('prompt-helper-system-button', 'S-Prompts', 'Open System Prompt List', 'SYSTEM_PROMPT');
             createPromptButton('prompt-helper-app-starter-button', 'A-Prompts', 'Open App Starter Prompt List', 'APP_STARTER_PROMPT');
 
@@ -302,33 +319,44 @@ ${promptsArrayString}
                 const nPM = document.createElement('p'); nPM.textContent = 'No prompts available. Please edit script or use Prompt Amplifier app to add prompts.';
                 nPM.className = 'prompt-helper-empty-message'; cD.appendChild(nPM);
             } else {
-                fP.forEach(p => {
-                    const lIW = document.createElement('div'); lIW.className = 'prompt-helper-modal-list-item-wrapper';
-                    const lI = document.createElement('div'); lI.className = 'prompt-helper-modal-list-item';
+                const groupedPrompts = fP.reduce((acc, p) => {
+                    const category = p.category || 'Uncategorized';
+                    if (!acc[category]) acc[category] = [];
+                    acc[category].push(p);
+                    return acc;
+                }, {});
 
-                    if (p.category) {
-                        const cB = document.createElement('span'); cB.className = 'prompt-category-badge'; cB.textContent = p.category;
-                        const style = this.getCategoryStyleTm(p.category);
-                        if (style) {
-                            lIW.style.backgroundColor = style.cardBg;
-                            cB.style.backgroundColor = style.badgeBg; cB.style.color = style.badgeText;
-                            cB.style.border = '1px solid ' + style.badgeBorder;
-                        }
-                        lI.appendChild(cB);
-                        lI.appendChild(document.createTextNode(' '));
+                const sortedCategories = Object.keys(groupedPrompts).sort((a,b) => a.localeCompare(b));
+
+                sortedCategories.forEach(category => {
+                     if (category !== 'Uncategorized') {
+                        const catHeader = document.createElement('div');
+                        catHeader.className = 'prompt-category-header';
+                        catHeader.textContent = category;
+                        const style = this.getCategoryStyleTm(category);
+                        if(style) catHeader.style.borderLeftColor = style.badgeBorder;
+                        cD.appendChild(catHeader);
                     }
-                    lI.appendChild(document.createTextNode(p.title));
+                    groupedPrompts[category].forEach(p => {
+                        const lIW = document.createElement('div'); lIW.className = 'prompt-helper-modal-list-item-wrapper';
+                        const lI = document.createElement('div'); lI.className = 'prompt-helper-modal-list-item';
 
-                    const titleAttrContent = String(p.content || '').replace(/'/g, "\\\\'").substring(0, 100) + (String(p.content || '').length > 100 ? '...' : '');
-                    lI.title = 'Click to copy: ' + titleAttrContent;
-                    const pB = document.createElement('button'); pB.className = 'prompt-helper-preview-button';
-                    pB.innerHTML = 'PV'; pB.title = 'Preview content';
-                    lIW.appendChild(lI); lIW.appendChild(pB); cD.appendChild(lIW);
-                    pB.addEventListener('click', e => { e.stopPropagation(); this.showPromptPreviewModal(p); });
-                    lIW.addEventListener('click', (e) => {
-                        if (e.target !== pB && !pB.contains(e.target)) {
-                           this.copyToClipboard(p.content, p.title, 'prompt-list-modal');
-                        }
+                        const titleSpan = document.createElement('span');
+                        titleSpan.className = 'prompt-title-span';
+                        titleSpan.textContent = p.title;
+                        lI.appendChild(titleSpan);
+
+                        const titleAttrContent = String(p.content || '').replace(/'/g, "\\\\'").substring(0, 100) + (String(p.content || '').length > 100 ? '...' : '');
+                        lI.title = 'Click to copy: ' + titleAttrContent;
+                        const pB = document.createElement('button'); pB.className = 'prompt-helper-preview-button';
+                        pB.innerHTML = 'PV'; pB.title = 'Preview content';
+                        lIW.appendChild(lI); lIW.appendChild(pB); cD.appendChild(lIW);
+                        pB.addEventListener('click', e => { e.stopPropagation(); this.showPromptPreviewModal(p); });
+                        lIW.addEventListener('click', (e) => {
+                            if (e.target !== pB && !pB.contains(e.target)) {
+                               this.copyToClipboard(p.content, p.title, 'prompt-list-modal');
+                            }
+                        });
                     });
                 });
             }
@@ -450,7 +478,7 @@ ${promptsArrayString}
                     --ph-preset-button-border-color: #d1e0ec; --ph-preset-button-hover-bg-color: #e6f2ff;
                 }
                 #prompt-helper-button-container {
-                    position: fixed; z-index: 9999; display: flex; gap: 10px;
+                    position: fixed; z-index: 9999; display: flex; flex-wrap: wrap; gap: 6px;
                     background-color: rgba(255, 255, 255, 0.8); backdrop-filter: blur(4px);
                     padding: 6px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
                     border: 1px solid rgba(0,0,0,0.1);
@@ -474,12 +502,24 @@ ${promptsArrayString}
                 #prompt-helper-edit-script-button:hover { background-color: var(--ph-edit-button-hover-bg-color); }
                 #prompt-helper-copy-page-url-button { background-color: var(--ph-copy-url-button-bg-color); }
                 #prompt-helper-copy-page-url-button:hover { background-color: var(--ph-copy-url-button-hover-bg-color); }
+                .prompt-helper-preset-button { 
+                    background-color: var(--ph-preset-button-bg-color) !important; 
+                    color: var(--ph-preset-button-text-color) !important; 
+                    border: 1px solid var(--ph-preset-button-border-color) !important;
+                    padding: 5px 10px !important;
+                    font-size: 12px !important;
+                    font-weight: 400 !important;
+                }
+                .prompt-helper-preset-button:hover { 
+                    background-color: var(--ph-preset-button-hover-bg-color) !important; 
+                    border-color: var(--ph-preset-button-text-color) !important; 
+                }
                 .prompt-helper-toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); padding: 12px 22px; color: white; border-radius: 6px; z-index: calc(var(--ph-modal-z-index) + 100); box-shadow: 0 3px 8px rgba(0,0,0,0.25); font-size: 14.5px; display: none; white-space: pre-wrap; text-align: center; max-width: 85%;}
                 .prompt-helper-toast.success { background-color: #4CAF50; }
                 .prompt-helper-toast.error { background-color: #f44336; }
                 .prompt-helper-toast.warning { background-color: var(--ph-toast-warning-bg-color); color: var(--ph-toast-warning-text-color); }
                 .prompt-helper-modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.4); align-items: flex-start; justify-content: center; }
-                .prompt-helper-modal-dialog { background-color: #FFFFFF; border-radius: 8px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); width: 450px; max-height: calc(85vh - 60px); display: flex; flex-direction: column; color: #000; border: 1px solid #E5E7EB; }
+                .prompt-helper-modal-dialog { background-color: #FFFFFF; border-radius: 8px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); width: 450px; max-height: 85vh; display: flex; flex-direction: column; color: #000; border: 1px solid #E5E7EB; }
                 .prompt-helper-preview-dialog { width: 90% !important; max-width: 700px !important; max-height: 80vh !important; }
                 .prompt-helper-modal-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-bottom: 1px solid #E5E7EB; }
                 .prompt-helper-modal-header h3 { margin: 0; font-size: 17px; color: var(--ph-button-bg-color); font-weight: 600; }
@@ -492,14 +532,13 @@ ${promptsArrayString}
                 .prompt-helper-button.primary:hover { background-color: var(--ph-button-hover-bg-color); border-color: var(--ph-button-hover-bg-color); }
                 .prompt-helper-button.secondary { background-color: #fff; color: var(--ph-button-bg-color); }
                 .prompt-helper-button.secondary:hover { background-color: #F3F4F6; border-color: var(--ph-button-hover-bg-color); }
-                .prompt-helper-preset-button { background-color: var(--ph-preset-button-bg-color); color: var(--ph-preset-button-text-color); border: 1px solid var(--ph-preset-button-border-color); }
-                .prompt-helper-preset-button:hover { background-color: var(--ph-preset-button-hover-bg-color); border-color: var(--ph-preset-button-text-color); }
                 .prompt-list-items-container { max-height: 60vh; }
-                .prompt-helper-modal-list-item-wrapper { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E5E7EB; transition: background-color 0.15s; }
+                .prompt-category-header { font-weight: 600; font-size: 14px; color: #374151; padding: 12px 12px 6px; border-left: 3px solid; margin-top: 8px; }
+                .prompt-helper-modal-list-item-wrapper { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #E5E7EB; transition: background-color: 0.15s; }
                 .prompt-helper-modal-list-item-wrapper:last-child { border-bottom: none; }
                 .prompt-helper-modal-list-item-wrapper:hover { background-color: #F3F4F6; }
-                .prompt-helper-modal-list-item { flex-grow: 1; padding: 13px 12px; font-size: 14px; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
-                .prompt-category-badge { font-size: 0.85em; padding: 4px 7px; border-radius: 5px; margin-right: 8px; font-weight: 500; vertical-align: middle; border-width: 1px; border-style: solid; }
+                .prompt-helper-modal-list-item { flex-grow: 1; padding: 13px 12px; font-size: 14px; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; display: flex; flex-direction: column; align-items: flex-start; }
+                .prompt-title-span { font-weight: 500; }
                 .prompt-helper-preview-button { background: none; border: none; color: #555; cursor: pointer; padding: 8px 12px; font-size: 18px; border-radius: 4px; transition: background-color 0.2s, color 0.2s; }
                 .prompt-helper-preview-button:hover { color: var(--ph-button-bg-color); background-color: #E5E7EB; }
                 .prompt-helper-empty-message { color: #555; text-align: center; padding: 25px 0; font-style: italic;}

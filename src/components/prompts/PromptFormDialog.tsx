@@ -43,24 +43,41 @@ export default function PromptFormDialog({ isOpen, onClose, onSave, prompt }: Pr
   const [category, setCategory] = useState("");
   const [isSuggestingName, setIsSuggestingName] = useState(false);
   const { toast } = useToast();
-  const { getUniqueCategories } = usePrompts(); // Get unique categories
+  const { getUniqueCategories } = usePrompts();
 
-  const uniqueCategories = getUniqueCategories; // Use directly from the hook
+  const uniqueCategories = getUniqueCategories;
+
+  // New state to control category visibility
+  const [showCategory, setShowCategory] = useState(true);
 
   useEffect(() => {
-    if (prompt) {
-      setTitle(prompt.title);
-      setType(prompt.type);
-      setContent(prompt.content);
-      setCategory(prompt.category || "");
-    } else {
-      // Reset for new prompt
-      setTitle("");
-      setType(PROMPT_TYPES.SYSTEM as PromptType);
-      setContent("");
-      setCategory("");
+    if (isOpen) {
+      if (prompt) {
+        setTitle(prompt.title);
+        setType(prompt.type);
+        setContent(prompt.content);
+        setCategory(prompt.category || "");
+        setShowCategory(prompt.type !== PROMPT_TYPES.QUICK_ACTION);
+      } else {
+        // Reset for new prompt
+        setTitle("");
+        setType(PROMPT_TYPES.QUICK_ACTION as PromptType); // Default to Quick Action for new prompts
+        setContent("");
+        setCategory("");
+        setShowCategory(false); // Hide category for default new Quick Action
+      }
     }
   }, [prompt, isOpen]);
+
+  // Effect to handle category visibility when type changes
+  useEffect(() => {
+    const isQuickAction = (type === PROMPT_TYPES.QUICK_ACTION);
+    setShowCategory(!isQuickAction);
+    if (isQuickAction) {
+      setCategory(''); // Clear category for Quick Actions
+    }
+  }, [type]);
+
 
   const handleSuggestName = async () => {
     if (!content.trim()) {
@@ -110,7 +127,7 @@ export default function PromptFormDialog({ isOpen, onClose, onSave, prompt }: Pr
       title, 
       type, 
       content, 
-      category: trimmedCategory || undefined 
+      category: type === PROMPT_TYPES.QUICK_ACTION ? undefined : (trimmedCategory || undefined)
     };
     if (prompt && prompt.id) {
       onSave({ ...promptData, id: prompt.id });
@@ -137,7 +154,7 @@ export default function PromptFormDialog({ isOpen, onClose, onSave, prompt }: Pr
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 className="flex-grow"
-                placeholder="Enter prompt title"
+                placeholder={type === PROMPT_TYPES.QUICK_ACTION ? "Button Text (e.g., 'Fix Grammar')" : "Enter prompt title"}
               />
               <Button
                 variant="outline"
@@ -167,19 +184,21 @@ export default function PromptFormDialog({ isOpen, onClose, onSave, prompt }: Pr
               </SelectContent>
             </Select>
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="category" className="text-right">
-              Category
-            </Label>
-            <div className="col-span-3">
-              <CreatableCombobox
-                value={category}
-                onChange={setCategory}
-                options={uniqueCategories.map(cat => ({ value: cat, label: cat }))}
-                placeholder="Select or create a category"
-              />
+          {showCategory && (
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="category" className="text-right">
+                Category
+              </Label>
+              <div className="col-span-3">
+                <CreatableCombobox
+                  value={category}
+                  onChange={setCategory}
+                  options={uniqueCategories.map(cat => ({ value: cat, label: cat }))}
+                  placeholder="Select or create a category"
+                />
+              </div>
             </div>
-          </div>
+          )}
           <div className="grid grid-cols-4 items-start gap-4">
             <Label htmlFor="content" className="text-right pt-2">
               Content
@@ -189,7 +208,7 @@ export default function PromptFormDialog({ isOpen, onClose, onSave, prompt }: Pr
               value={content}
               onChange={(e) => setContent(e.target.value)}
               className="col-span-3 min-h-[200px] font-code"
-              placeholder="Enter prompt content here..."
+              placeholder={type === PROMPT_TYPES.QUICK_ACTION ? "Text to be copied to clipboard" : "Enter prompt content here..."}
             />
           </div>
         </div>

@@ -87,6 +87,7 @@ export default function PromptWorkspace() {
 
   const systemPrompts = getPromptsByType(PROMPT_TYPES.SYSTEM as 'SYSTEM_PROMPT');
   const appStarterPrompts = getPromptsByType(PROMPT_TYPES.APP_STARTER as 'APP_STARTER_PROMPT');
+  const quickActionPrompts = getPromptsByType(PROMPT_TYPES.QUICK_ACTION as 'QUICK_ACTION');
 
   return (
     <div className="flex flex-col flex-grow">
@@ -100,6 +101,13 @@ export default function PromptWorkspace() {
         tampermonkeyUrl={tampermonkeyUrl}
       />
       <main className="container mx-auto px-4 py-8 flex-grow">
+        <PromptCategorySection
+          title={PROMPT_TYPE_NAMES.QUICK_ACTION}
+          prompts={quickActionPrompts}
+          promptType={PROMPT_TYPES.QUICK_ACTION as 'QUICK_ACTION'}
+          onEditPrompt={handleOpenForm}
+          onDeletePrompt={deletePrompt}
+        />
         <PromptCategorySection
           title={PROMPT_TYPE_NAMES.SYSTEM_PROMPT}
           prompts={systemPrompts}
