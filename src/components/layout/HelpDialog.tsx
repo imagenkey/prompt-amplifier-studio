@@ -9,7 +9,7 @@ import {
   SheetDescription,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { HelpCircle, FilePlus2, Copy, Rocket, Settings } from "lucide-react";
+import { HelpCircle, FilePlus2, Copy, Rocket, Settings, Zap } from "lucide-react";
 
 interface HelpDialogProps {
   isOpen: boolean;
@@ -52,9 +52,28 @@ export function HelpDialog({ isOpen, onOpenChange, trigger }: HelpDialogProps) {
         </li>
       </ol>
 
+      <h3 className="text-lg font-semibold text-primary flex items-center gap-2"><Zap className="h-5 w-5 text-primary" /> 新機能：クイックアクション</h3>
+      <p>
+        「箇条書きでまとめて」「Microsoftスタイルガイドで修正して」のような、よく使う短い指示を毎回入力するのは面倒ではありませんか？「クイックアクション」は、そんな定型文を小さなボタンとして登録し、ワンクリックでクリップボードにコピーできる便利な機能です。
+      </p>
+      <ul className="space-y-3 list-none pl-2">
+        <li>
+          <div className="font-semibold flex items-center gap-2"><FilePlus2 className="h-4 w-4 text-muted-foreground" /> 作成方法</div>
+          <p className="ml-6 text-muted-foreground">
+            「Add New Prompt」でプロンプトタイプに「Quick Action」を選択し、ボタンに表示したい短いタイトルと、コピーしたい内容を登録します。
+          </p>
+        </li>
+        <li>
+          <div className="font-semibold flex items-center gap-2"><Copy className="h-4 w-4 text-muted-foreground" /> 使い方</div>
+          <p className="ml-6 text-muted-foreground">
+            「Copy Prompts for Script」でスクリプトを更新すると、LLMサイト上のパネルに小さなボタン群として追加されます。クリックするだけで、登録した内容がコピーされ、すぐに貼り付けられます。
+          </p>
+        </li>
+      </ul>
+
       <h3 className="text-lg font-semibold text-primary">次は何をすればいい？</h3>
       <p>
-        サポートされているLLMサイト（ChatGPT、Geminiなど）にアクセスしてください。あなたのプロンプトが入った新しいフローティングパネルが表示されます。ボタンをクリックしてプロンプト一覧を表示し、プロンプト名をクリックすれば、その内容が即座にコピーされます。
+        サポートされているLLMサイト（ChatGPT、Geminiなど）にアクセスしてください。あなたのプロンプトが入った新しいフローティングパネルが表示されます。「S-Prompts」や「A-Prompts」ボタンからはプロンプト一覧を、「クイックアクション」は専用の小ボタンから、ワンクリックで内容をコピーできます。
       </p>
     </div>
   );
