@@ -6,6 +6,7 @@ export interface Prompt {
   type: PromptType;
   title: string;
   content: string;
+  copyCount?: number;
   category?: string; // Added category field
   userId?: string; // Keep userId optional here for general type definition
 }

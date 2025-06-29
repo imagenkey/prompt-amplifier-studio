@@ -7,9 +7,10 @@ interface PromptListProps {
   prompts: Prompt[];
   onEditPrompt: (prompt: Prompt) => void;
   onDeletePrompt: (promptId: string) => void;
+  onIncrementCopyCount: (promptId: string) => void;
 }
 
-export default function PromptList({ prompts, onEditPrompt, onDeletePrompt }: PromptListProps) {
+export default function PromptList({ prompts, onEditPrompt, onDeletePrompt, onIncrementCopyCount }: PromptListProps) {
   if (prompts.length === 0) {
     return <p className="text-muted-foreground italic text-center py-8">No prompts in this category yet.</p>;
   }
@@ -22,6 +23,7 @@ export default function PromptList({ prompts, onEditPrompt, onDeletePrompt }: Pr
           prompt={prompt}
           onEdit={onEditPrompt}
           onDelete={onDeletePrompt}
+          onIncrementCopyCount={onIncrementCopyCount}
         />
       ))}
     </div>

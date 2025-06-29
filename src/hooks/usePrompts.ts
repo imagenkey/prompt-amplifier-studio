@@ -171,6 +171,35 @@ export function usePrompts() {
     }
   }, [currentUser, getPromptsCollectionRef, db]);
 
+  const incrementCopyCount = useCallback(async (promptId: string) => {
+    if (!currentUser?.uid || !promptId) {
+      console.error("User or prompt ID missing for incrementing copy count.");
+      return;
+    }
+    const promptsColRef = getPromptsCollectionRef();
+    if (!promptsColRef) {
+      console.error("Prompts collection reference not available.");
+      return;
+    }
+
+    const promptRef = doc(db, "prompts", promptId);
+    const promptToUpdate = prompts.find(p => p.id === promptId);
+
+    if (promptToUpdate) {
+      const newCopyCount = (promptToUpdate.copyCount || 0) + 1;
+      try {
+        await updateDoc(promptRef, { copyCount: newCopyCount });
+        setPrompts(prev =>
+          prev.map(p =>
+            p.id === promptId ? { ...p, copyCount: newCopyCount } : p
+          )
+        );
+      } catch (error) {
+        console.error("Error incrementing copy count: ", error);
+      }
+    }
+  }, [currentUser, getPromptsCollectionRef, db, prompts]);
+
   const getPromptsByType = useCallback((type: PromptType) => {
     return prompts.filter(p => p.type === type);
   }, [prompts]);
@@ -190,6 +219,7 @@ export function usePrompts() {
     addPrompt,
     updatePrompt,
     deletePrompt,
+    incrementCopyCount,
     getPromptsByType,
     getUniqueCategories,
     isLoaded,

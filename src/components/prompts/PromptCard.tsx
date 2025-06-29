@@ -17,7 +17,7 @@ import {
 import type { Prompt } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { copyToClipboard as copyUtil } from "@/lib/utils";
-import { Edit3, Trash2, Copy } from "lucide-react";
+import { Edit3, Trash2, Copy, TrendingUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
@@ -25,6 +25,7 @@ interface PromptCardProps {
   prompt: Prompt;
   onEdit: (prompt: Prompt) => void;
   onDelete: (promptId: string) => void;
+  onIncrementCopyCount: (promptId: string) => void;
 }
 
 // Predefined styles for categories - Expanded to 15+
@@ -70,7 +71,7 @@ function getCategoryStyle(categoryName?: string): { card: string; badge: string 
 }
 
 
-export default function PromptCard({ prompt, onEdit, onDelete }: PromptCardProps) {
+export default function PromptCard({ prompt, onEdit, onDelete, onIncrementCopyCount }: PromptCardProps) {
   const { toast } = useToast();
 
   const handleCopyContent = () => {
@@ -80,6 +81,7 @@ export default function PromptCard({ prompt, onEdit, onDelete }: PromptCardProps
       `Failed to copy content of '${prompt.title}'.`,
       toast
     );
+    onIncrementCopyCount(prompt.id);
   };
 
   const currentCategoryStyle = getCategoryStyle(prompt.category);
@@ -110,34 +112,40 @@ export default function PromptCard({ prompt, onEdit, onDelete }: PromptCardProps
           {prompt.content}
         </p>
       </CardContent>
-      <CardFooter className="flex justify-end gap-2 pt-4 border-t">
-        <Button variant="ghost" size="sm" onClick={handleCopyContent} title="Copy Content">
-          <Copy className="mr-1 h-4 w-4" /> Copy
-        </Button>
-        <Button variant="outline" size="sm" onClick={() => onEdit(prompt)} title="Edit Prompt">
-          <Edit3 className="mr-1 h-4 w-4" /> Edit
-        </Button>
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button variant="destructive" size="sm" title="Delete Prompt">
-              <Trash2 className="mr-1 h-4 w-4" /> Delete
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This action cannot be undone. This will permanently delete the prompt titled "{prompt.title}".
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={() => onDelete(prompt.id)}>
-                Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+      <CardFooter className="flex justify-between items-center gap-2 pt-4 border-t">
+        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          <TrendingUp className="h-4 w-4" />
+          <span>{prompt.copyCount || 0}</span>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="ghost" size="sm" onClick={handleCopyContent} title="Copy Content">
+            <Copy className="mr-1 h-4 w-4" /> Copy
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => onEdit(prompt)} title="Edit Prompt">
+            <Edit3 className="mr-1 h-4 w-4" /> Edit
+          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" size="sm" title="Delete Prompt">
+                <Trash2 className="mr-1 h-4 w-4" /> Delete
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete the prompt titled "{prompt.title}".
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={() => onDelete(prompt.id)}>
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       </CardFooter>
     </Card>
   );

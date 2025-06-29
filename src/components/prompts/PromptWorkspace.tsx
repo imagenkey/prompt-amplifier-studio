@@ -19,6 +19,7 @@ export default function PromptWorkspace() {
     addPrompt, 
     updatePrompt, 
     deletePrompt, 
+    incrementCopyCount,
     getPromptsByType,
     isLoaded,
     needsUpdate,
@@ -107,6 +108,7 @@ export default function PromptWorkspace() {
           promptType={PROMPT_TYPES.QUICK_ACTION as 'QUICK_ACTION'}
           onEditPrompt={handleOpenForm}
           onDeletePrompt={deletePrompt}
+          onIncrementCopyCount={incrementCopyCount}
         />
         <PromptCategorySection
           title={PROMPT_TYPE_NAMES.SYSTEM_PROMPT}
@@ -114,6 +116,7 @@ export default function PromptWorkspace() {
           promptType={PROMPT_TYPES.SYSTEM as 'SYSTEM_PROMPT'}
           onEditPrompt={handleOpenForm}
           onDeletePrompt={deletePrompt}
+          onIncrementCopyCount={incrementCopyCount}
         />
         <PromptCategorySection
           title={PROMPT_TYPE_NAMES.APP_STARTER_PROMPT}
@@ -121,6 +124,7 @@ export default function PromptWorkspace() {
           promptType={PROMPT_TYPES.APP_STARTER as 'APP_STARTER_PROMPT'}
           onEditPrompt={handleOpenForm}
           onDeletePrompt={deletePrompt}
+          onIncrementCopyCount={incrementCopyCount}
         />
       </main>
       <PromptFormDialog

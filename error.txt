@@ -1,0 +1,39 @@
+2025-06-29 17:49:38.346 [info] > git ls-files --stage -- src/lib/firebase.ts [119ms]
+2025-06-29 17:49:38.455 [info] > git cat-file -s ab4220714240b066f9af4ba3bea086fbfdf4960b [97ms]
+2025-06-29 17:49:38.531 [info] > git check-ignore -v -z --stdin [88ms]
+2025-06-29 17:49:44.381 [info] > git config --get commit.template [75ms]
+2025-06-29 17:49:44.393 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/master refs/remotes/master [80ms]
+2025-06-29 17:49:44.400 [warning] [Git][revParse] Unable to read file: ENOENT: no such file or directory, open 'c:\Users\aoueki\prompt-amplifier-studio\.git\refs\remotes\origin\master'
+2025-06-29 17:49:44.483 [info] > git rev-parse refs/remotes/origin/master [83ms]
+2025-06-29 17:49:44.580 [info] > git status -z -uall [91ms]
+2025-06-29 17:49:44.585 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [86ms]
+2025-06-29 17:49:57.212 [info] > git config --get commit.template [84ms]
+2025-06-29 17:49:57.223 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/master refs/remotes/master [89ms]
+2025-06-29 17:49:57.229 [warning] [Git][revParse] Unable to read file: ENOENT: no such file or directory, open 'c:\Users\aoueki\prompt-amplifier-studio\.git\refs\remotes\origin\master'
+2025-06-29 17:49:57.295 [info] > git rev-parse refs/remotes/origin/master [66ms]
+2025-06-29 17:49:57.384 [info] > git status -z -uall [83ms]
+2025-06-29 17:49:57.392 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [84ms]
+2025-06-29 17:50:18.543 [info] > git -c user.useConfigOnly=true commit --quiet --allow-empty-message --file - [91ms]
+2025-06-29 17:50:18.543 [info] Author identity unknown
+
+*** Please tell me who you are.
+
+Run
+
+  git config --global user.email "you@example.com"
+  git config --global user.name "Your Name"
+
+to set your account's default identity.
+Omit --global to set the identity only in this repository.
+
+fatal: no email was given and auto-detection is disabled
+2025-06-29 17:50:18.642 [info] > git config --get-all user.name [92ms]
+2025-06-29 17:50:18.714 [info] > git config --get commit.template [65ms]
+2025-06-29 17:50:18.724 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) --ignore-case refs/heads/master refs/remotes/master [70ms]
+2025-06-29 17:50:18.730 [warning] [Git][revParse] Unable to read file: ENOENT: no such file or directory, open 'c:\Users\aoueki\prompt-amplifier-studio\.git\refs\remotes\origin\master'
+2025-06-29 17:50:18.795 [info] > git rev-parse refs/remotes/origin/master [65ms]
+2025-06-29 17:50:18.885 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [78ms]
+2025-06-29 17:50:18.885 [info] > git status -z -uall [85ms]
+2025-06-29 17:50:20.595 [info] > git ls-files --stage -- src/lib/firebase.ts [80ms]
+2025-06-29 17:50:20.684 [info] > git cat-file -s ab4220714240b066f9af4ba3bea086fbfdf4960b [81ms]
+2025-06-29 17:50:20.762 [info] > git show --textconv :src/lib/firebase.ts [71ms]

@@ -14,9 +14,10 @@ interface PromptCategorySectionProps {
   promptType: PromptType;
   onEditPrompt: (prompt: Prompt) => void;
   onDeletePrompt: (promptId: string) => void;
+  onIncrementCopyCount: (promptId: string) => void;
 }
 
-export default function PromptCategorySection({ title, prompts, promptType, onEditPrompt, onDeletePrompt }: PromptCategorySectionProps) {
+export default function PromptCategorySection({ title, prompts, promptType, onEditPrompt, onDeletePrompt, onIncrementCopyCount }: PromptCategorySectionProps) {
   const { toast } = useToast();
 
   const handleCopyTemplate = () => {
@@ -42,6 +43,7 @@ export default function PromptCategorySection({ title, prompts, promptType, onEd
         prompts={prompts}
         onEditPrompt={onEditPrompt}
         onDeletePrompt={onDeletePrompt}
+        onIncrementCopyCount={onIncrementCopyCount}
       />
     </section>
   );
