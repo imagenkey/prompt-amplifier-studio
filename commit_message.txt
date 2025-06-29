@@ -1,0 +1,4 @@
+feat: Implement prompt copy count and fix build issues
+
+- Integrate copy count functionality for prompts, persisting data in Firebase Firestore.
+- Resolve build errors by setting Git user identity and clearing .next directory.
